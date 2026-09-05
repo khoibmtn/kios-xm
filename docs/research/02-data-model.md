@@ -112,16 +112,32 @@ products(
   kind ENUM('product','service','package','card'),   -- 4 loại lõi
   unit, base_price, cost, is_active, allows_sale,
   image_urls text[], description,
+  -- riêng product
+  track_inventory bool, min_qty, max_qty, weight numeric, shelf_id,
   -- riêng service
   duration_minutes int,
-  -- riêng package/card
-  validity_days int, validity_type ENUM('days','months','fixed_date'),
-  card_face_value numeric, card_bonus_value numeric,
-  track_inventory bool, min_qty, max_qty,
+  -- riêng package: "Thời hạn, lịch trình"
+  validity_mode ENUM('unlimited','specific_date','duration'),
+  validity_until date, validity_days int,
+  schedule_mode ENUM('free','fixed'),                -- UI gốc: "Lịch sử dụng: Tự do"
+  -- riêng card
+  card_face_value numeric,        -- "Giá bán"        (khách trả)
+  card_usable_value numeric,      -- "Mệnh giá sử dụng" (được tiêu; chênh lệch = tặng)
   created_at, updated_at
 )
 product_variants(id, product_id, sku, attributes jsonb, base_price, cost)
-package_items(id, package_id -> products, service_id -> products, sessions int, unit_price)
+package_items(
+  id, package_id -> products, service_id -> products,
+  sessions int, unit_price, retail_price,            -- giá bán lẻ tại thời điểm đóng gói
+  min_days_between_sessions int                      -- "Mỗi buổi cách nhau"
+)
+-- ⭐ Phạm vi tiêu của thẻ tài khoản (KiotViet: "Phạm vi thanh toán")
+card_scopes(
+  id, product_id,                                    -- product.kind = 'card'
+  scope_kind ENUM('kind','category','product'),
+  target_kind ENUM('product','service','package') NULL,
+  category_id NULL, target_product_id NULL
+)
 service_materials(id, service_id -> products, material_id -> products, quantity numeric)
 price_books(id, tenant_id, name, starts_at, ends_at, is_active)
 price_book_items(price_book_id, product_id, price)
@@ -259,12 +275,16 @@ employee_salaries(
   base_amount numeric, template_id,
   allowances jsonb, deductions jsonb, bonus_rules jsonb
 )
-commission_tables(id, tenant_id, name, applies_to ENUM('performer','consultant','both'), is_default)
+-- ⭐ BA vai trò sinh hoa hồng (xác nhận qua báo cáo nhân viên của KiotViet):
+--    performer  = "Thực hiện dịch vụ"  → invoice_items.performer_id
+--    consultant = "Tư vấn bán hàng"    → invoice_items.consultant_id
+--    cashier    = "Thu ngân"           → invoices.cashier_id
+commission_tables(id, tenant_id, name, scope ENUM('system','branch'), branch_id NULL, is_default)
 commission_table_employees(table_id, employee_id)
 commission_rules(
   id, table_id, product_id NULL, category_id NULL,      -- áp theo hàng hoặc theo nhóm
-  role ENUM('performer','consultant'),
-  calc ENUM('percent_revenue','percent_profit','fixed_amount'),
+  role ENUM('performer','consultant','cashier'),
+  calc ENUM('percent_revenue','percent_profit','fixed_amount'),  -- UI gốc: VND | %
   value numeric
 )
 commission_entries(                                     -- kết quả tính, ghi khi hoàn tất hoá đơn
