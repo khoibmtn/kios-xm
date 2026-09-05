@@ -164,6 +164,25 @@ lớn xử lý xuống trình duyệt. Làm được nhưng phức tạp hơn v�
 | **Tạm dừng sau 7 ngày không có truy vấn** | Spa hoạt động hằng ngày nên hiếm khi xảy ra — trừ nghỉ Tết dài | Cron ping mỗi ngày (ghi 1 dòng vào bảng `heartbeat`) |
 | Không có SLA | Chấp nhận được ở quy mô 1 spa | Khi cần cam kết → Supabase Pro 25 $ |
 
+### 3.5 Chuỗi kết nối Supabase — còn thiếu mật khẩu
+
+Đã lấy được và ghi vào `.env.local`:
+
+```
+DATABASE_URL  → postgres.fdqnwdowqyocaqmkkkrv@aws-0-ap-northeast-1.pooler.supabase.com:6543  (pooler, dùng lúc chạy)
+DIRECT_URL    → postgres.fdqnwdowqyocaqmkkkrv@aws-0-ap-northeast-1.pooler.supabase.com:5432  (trực tiếp, dùng cho migrate)
+```
+
+Region **ap-northeast-1 (Tokyo)** — độ trễ tới Việt Nam thấp, lựa chọn tốt.
+
+⚠️ Chỗ `[YOUR-PASSWORD]` cần thay bằng mật khẩu cơ sở dữ liệu. Supabase ghi rõ:
+*"The database password isn't viewable after creation"* — **không xem lại được**.
+
+Hai cách:
+- Anh Khôi còn nhớ mật khẩu đặt lúc tạo project → gửi để điền vào `.env.local`
+- Hoặc vào **Database Settings → Reset password** đặt mật khẩu mới (project chưa có dữ
+  liệu nên reset hoàn toàn an toàn)
+
 > ChatGPT khuyến nghị Supabase **Pro 25 $ ngay từ M0** — tôi **không đồng ý** với ràng buộc
 > chi phí của anh. Nhưng ChatGPT **đúng khi chỉ ra lỗi trong yêu cầu phi chức năng của tôi**:
 > tôi viết "sao lưu 30 ngày, khôi phục theo thời điểm" mà không đối chiếu gói dịch vụ.
@@ -210,13 +229,41 @@ ra) — đã có sẵn đường thoát ở mục 2.5.
 | Việc | Trạng thái |
 |---|---|
 | Tạo thư mục Drive | ✅ Xong — nhưng **không dùng trực tiếp được**, xem §2.2. Ứng dụng sẽ tự tạo thư mục riêng |
-| Google Cloud project + OAuth Client ID (web) | ✅ Xong — `just-rhythm-507701-c4` |
+| Google Cloud project + OAuth Client ID (web) | ✅ `just-rhythm-507701-c4`, client tên **"Spa management"**, tài khoản chủ sở hữu: `nguyenthithuhuong.k31h@gmail.com` |
 | `client_id` / `client_secret` | ✅ Đã nạp vào `.env.local` (chmod 600, đã chặn khỏi git) |
 | Đăng ký Cloudflare + Supabase | ✅ Xong |
-| **Điền Authorized redirect URIs** | ⏳ **Còn thiếu — anh Khôi cần làm** |
-| **Bật Google Drive API cho project** | ⏳ Cần kiểm tra |
-| **Đưa OAuth consent screen sang "In production"** | ⏳ **Bắt buộc** — nếu để "Testing", refresh token hỏng sau 7 ngày |
-| Chuỗi kết nối Supabase | ⏳ Chờ anh Khôi lấy từ Dashboard |
+| Authorized redirect URI | ✅ `http://localhost:3000/api/drive/callback` (đã kiểm chứng còn sau khi tải lại trang) |
+| Google Drive API | ✅ Đã bật sẵn |
+| Scope `drive.file` khai trong Data Access | ✅ Đã thêm — nằm ở nhóm **non-sensitive**, không cần xét duyệt |
+| Test users | ✅ 2 tài khoản: `nguyenthithuhuong.k31h@gmail.com`, `khoibm.tn@gmail.com` |
+| Supabase project | ✅ `fdqnwdowqyocaqmkkkrv`, org `khoibmtn's Org` (FREE), compute NANO, region **ap-northeast-1 (Tokyo)** |
+| Chuỗi kết nối Supabase | ✅ Đã ghi vào `.env.local`, **còn thiếu mật khẩu** (xem §3.5) |
+| Đưa OAuth app sang "In production" | ⚠️ **Chưa làm được — xem §2.6** |
+
+### 2.6 ⚠️ Vì sao chưa publish được, và vì sao chưa cần vội
+
+Nút **Publish app** vẫn bị khoá kèm thông báo *"Your app's OAuth configuration is
+incomplete… Please visit the Branding page"*. Trang Branding đã điền đủ mọi trường bắt
+buộc (App name, User support email, Developer contact). Phần còn trống là **App domain**:
+trang chủ ứng dụng, liên kết chính sách bảo mật, điều khoản dịch vụ, và **Authorized
+domains** — Google đòi những thứ này để chuyển app External sang production, và authorized
+domain phải là **tên miền đã xác minh quyền sở hữu**.
+
+Hiện dự án **chưa có tên miền**, nên chưa thể hoàn tất.
+
+**Điều đó không chặn công việc.** Ở trạng thái *Testing* + đã khai test user, luồng OAuth
+chạy bình thường. Hệ quả duy nhất: **refresh token hết hạn sau 7 ngày**, tức trong giai
+đoạn phát triển thỉnh thoảng phải bấm "Kết nối lại Google Drive".
+
+⇒ Hai việc bắt buộc trong thiết kế, làm ngay từ M0:
+1. Màn hình **"Kết nối lại Google Drive"** trong phần Thiết lập.
+2. Hệ thống **phát hiện token hỏng → cảnh báo rõ ràng**, và **không được làm mất dữ liệu**:
+   nếu upload ảnh thất bại thì xếp vào hàng đợi, thử lại sau khi kết nối lại.
+
+**Khi nào publish được:** lúc triển khai thật, ứng dụng sẽ có tên miền. Khi đó viết 2 trang
+tĩnh `/privacy` và `/terms`, khai vào Branding, xác minh tên miền, rồi Publish. Từ đó
+refresh token không còn hết hạn. Nếu dùng tên miền dạng `*.workers.dev` mà Google không cho
+xác minh, phương án dự phòng là mua một tên miền riêng (~250.000 đ/năm).
 
 ### Giá trị cần dán vào Google Cloud Console
 
