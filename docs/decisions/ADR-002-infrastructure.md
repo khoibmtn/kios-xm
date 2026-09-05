@@ -58,10 +58,27 @@ Chỉ có hai đường:
 - **Bắt buộc**: đưa OAuth app sang trạng thái **"In production"**. Nếu để "Testing",
   `refresh_token` **hết hạn sau 7 ngày** và hệ thống sẽ ngừng lưu ảnh.
 
-### 2.2 Cấu trúc thư mục
+### 2.2 ⚠️ Thư mục gốc phải do chính ứng dụng tạo
+
+**Phát hiện khi cấu hình thật (05/09/2026):** scope `drive.file` chỉ cho phép truy cập
+**những tệp/thư mục do chính ứng dụng tạo ra**, hoặc do người dùng chọn qua Google Picker.
+Một thư mục có sẵn — dù đã bật chia sẻ — vẫn **không nhìn thấy được** từ phía ứng dụng;
+gọi `files.create` với `parents:[folderId]` sẽ trả về `404 File not found`.
+
+Anh Khôi đã tạo sẵn thư mục `1yWzNKJwykbpCk4wBbKXhS99pX3Xty1--`, nhưng **không dùng
+trực tiếp được**. Ba lựa chọn:
+
+| Phương án | Đánh giá |
+|---|---|
+| **① Ứng dụng tự tạo thư mục gốc** ⭐ | Đơn giản nhất, giữ scope hẹp, không cần thủ tục xét duyệt. Sau khi tạo, anh **kéo thư mục đó vào bất kỳ đâu trong Drive** (kể cả vào trong thư mục đã tạo sẵn) — ứng dụng vẫn ghi được bình thường, vì quyền gắn với **tệp**, không gắn với vị trí |
+| ② Tích hợp Google Picker | Cho phép chọn đúng thư mục có sẵn, vẫn giữ scope hẹp, nhưng phải làm thêm màn hình chọn + API key. Để dành nếu sau này cần |
+| ③ Dùng scope `drive` toàn quyền | ❌ Không nên: đây là *restricted scope*, Google bắt buộc đánh giá bảo mật, và ứng dụng sẽ đọc được **toàn bộ** Drive của anh — rủi ro không cần thiết |
+
+**Chọn phương án ①.** `GOOGLE_DRIVE_ROOT_FOLDER_ID` để trống lúc đầu; lần kết nối đầu tiên
+hệ thống tạo thư mục `kios-xm-data` rồi tự ghi lại ID.
 
 ```
-kios-xm/                                   ← ID thư mục gốc anh Khôi cung cấp
+kios-xm-data/                              ← do ứng dụng tạo, anh tự kéo vào chỗ mong muốn
 ├── customers/{yyyy}/{mm}/{customerId}/     ← ảnh trước/sau, ảnh hồ sơ
 ├── products/                               ← ảnh hàng hoá
 ├── invoices/{yyyy}/{mm}/                   ← PDF hoá đơn đã xuất
@@ -188,14 +205,34 @@ ra) — đã có sẵn đường thoát ở mục 2.5.
 4. **Sao lưu**: `pg_dump` hằng ngày lên Drive, giữ 30 bản, kiểm thử khôi phục hằng quý.
 5. **Chi phí mục tiêu**: **0 đ** trong giai đoạn phát triển, **≈ 130.000 đ/tháng** khi vận hành.
 
-## Cần anh Khôi làm (khi tới M0)
+## Tình trạng chuẩn bị (cập nhật 05/09/2026)
 
-1. Tạo thư mục `kios-xm` trên Google Drive → gửi **ID thư mục**
-2. Tạo project trên Google Cloud Console → bật **Drive API** → tạo **OAuth Client ID**
-   (loại Web application) → gửi `client_id` và `client_secret`
-3. **Quan trọng**: đưa OAuth app sang trạng thái **"In production"** (nếu để "Testing",
-   kết nối sẽ hỏng sau 7 ngày)
-4. Đăng ký tài khoản Cloudflare và Supabase (đều miễn phí, không cần thẻ)
+| Việc | Trạng thái |
+|---|---|
+| Tạo thư mục Drive | ✅ Xong — nhưng **không dùng trực tiếp được**, xem §2.2. Ứng dụng sẽ tự tạo thư mục riêng |
+| Google Cloud project + OAuth Client ID (web) | ✅ Xong — `just-rhythm-507701-c4` |
+| `client_id` / `client_secret` | ✅ Đã nạp vào `.env.local` (chmod 600, đã chặn khỏi git) |
+| Đăng ký Cloudflare + Supabase | ✅ Xong |
+| **Điền Authorized redirect URIs** | ⏳ **Còn thiếu — anh Khôi cần làm** |
+| **Bật Google Drive API cho project** | ⏳ Cần kiểm tra |
+| **Đưa OAuth consent screen sang "In production"** | ⏳ **Bắt buộc** — nếu để "Testing", refresh token hỏng sau 7 ngày |
+| Chuỗi kết nối Supabase | ⏳ Chờ anh Khôi lấy từ Dashboard |
+
+### Giá trị cần dán vào Google Cloud Console
+
+**APIs & Services → Credentials → OAuth 2.0 Client IDs → Authorized redirect URIs:**
+
+```
+http://localhost:3000/api/drive/callback
+```
+
+*(Khi triển khai thật sẽ bổ sung thêm URL production của Cloudflare Workers.)*
+
+**Authorized JavaScript origins:** để trống — hệ thống dùng luồng authorization code phía
+máy chủ, không cần.
+
+⚠️ Redirect URI phải **trùng khớp từng ký tự** với biến `GOOGLE_REDIRECT_URI` trong
+`.env.local`, kể cả dấu `/` cuối. Sai một ký tự sẽ báo lỗi `redirect_uri_mismatch`.
 
 ---
 

@@ -22,6 +22,7 @@
 | 2026-09-05 | Claude Code | Khảo sát sâu đợt 2: 4 form tạo hàng hoá, lương/chấm công/bảng lương, nhập hàng & kiểm kho, khuôn mẫu báo cáo, giải phẫu hoá đơn thật (HD000586) | `docs/research/05-product-forms.md`, `06-employees-inventory-reports.md`, `07-invoice-anatomy.md` |
 | 2026-09-05 | Claude Code | Thiết kế tổng thể v1 để duyệt: 12 phân hệ, 4 bề mặt, 5 mẫu màn hình, 7 luồng nghiệp vụ, 12 bất biến | `docs/architecture/02-system-design.md` |
 | 2026-09-05 | Claude Code | **Phản biện chéo + sửa 3 lỗi kiến trúc** (employees/users, booking↔invoice, phân bổ giá gói); chốt hạ tầng chi phí tối thiểu + Google Drive | `docs/decisions/ADR-001`, `ADR-002`, `AGENTS.md`, `02-data-model.md`, `TASKS.md` |
+| 2026-09-05 | Claude Code | Nhận thông tin OAuth + Drive từ anh Khôi. Chặn `client_secret*.json` khỏi git, tạo `env.example` và `.env.local` (chmod 600). Phát hiện `drive.file` không ghi được vào thư mục có sẵn → ứng dụng sẽ tự tạo thư mục gốc | `.gitignore`, `env.example`, `ADR-002 §2.2` |
 
 ## Sự cố / bài học
 

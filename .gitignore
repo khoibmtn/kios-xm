@@ -1,3 +1,11 @@
+# === BÍ MẬT — TUYỆT ĐỐI KHÔNG COMMIT ===
+client_secret*.json
+*credentials*.json
+*service-account*.json
+secrets/
+*.pem
+*.key
+
 node_modules/
 .next/
 out/
