@@ -6,7 +6,7 @@ import { useFormStatus } from 'react-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { Field, MoneyInput, Select, TextArea, TextInput, Toggle } from '@/components/form/fields'
 import { Badge } from '@/components/data-table/filters'
-import { formatMoney, formatPercent } from '@/lib/format'
+import { formatDuration, formatMoney, formatPercent } from '@/lib/format'
 import { KIND_LABEL, KIND_ORDER, KIND_TONE } from '@/lib/catalog/labels'
 import { allocatePackageValue } from '@/lib/catalog/package-allocation'
 import { saveProductAction, type ActionState } from './actions'
@@ -262,7 +262,7 @@ export function ProductForm({ initial, categories, brands, units, services, mate
                   onClick={() => set('durationMinutes', String(m))}
                   className="border-border hover:bg-muted rounded-md border px-3 py-1.5 text-sm"
                 >
-                  {m >= 60 ? `${m / 60}h${m % 60 ? `${m % 60}'` : ''}` : `${m}'`}
+                  {formatDuration(m)}
                 </button>
               ))}
             </div>

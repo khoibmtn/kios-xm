@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import { cn } from '@/lib/utils'
 
 /** Các ô nhập dùng chung cho mọi form trong hệ thống. */
 
@@ -40,11 +41,11 @@ export function Field({
 }
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${controlClass} ${props.className ?? ''}`} />
+  return <input {...props} className={cn(controlClass, props.className)} />
 }
 
 export function TextArea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={`${controlClass} ${props.className ?? ''}`} rows={props.rows ?? 3} />
+  return <textarea {...props} className={cn(controlClass, props.className)} rows={props.rows ?? 3} />
 }
 
 export function Select({
@@ -73,7 +74,7 @@ export function Select({
   })
 
   return (
-    <select ref={ref} {...props} className={`${controlClass} ${props.className ?? ''}`}>
+    <select ref={ref} {...props} className={cn(controlClass, props.className)}>
       {placeholder !== undefined && <option value="">{placeholder}</option>}
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -108,7 +109,7 @@ export function MoneyInput({
         inputMode="numeric"
         value={display}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
-        className={`${controlClass} tabular pr-9 text-right`}
+        className={cn(controlClass, 'tabular pr-9 text-right', props.className)}
       />
       <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm">
         đ
