@@ -23,7 +23,12 @@
 | T-06 | Layout POS: header 2 tab (Lịch hẹn / Bán hàng), không sidebar | Antigravity | TODO | | Chạy tốt ở 1024×768 ngang và 375px |
 | T-07 | Component `DataTable` dùng chung (TanStack Table): sidebar lọc + bảng + dòng tổng + phân trang + tuỳ chỉnh cột + xuất file | Claude | TODO | | Dùng lại được cho ≥2 module; mobile tự chuyển sang dạng thẻ |
 | T-08 | Chuẩn hoá tiền tệ/ngày giờ: `lib/format.ts` (VND, `vi-VN`, `Asia/Ho_Chi_Minh`) | Antigravity | TODO | | `formatMoney(1500000)` → `1.500.000`; test đơn vị |
-| T-09 | Deploy Vercel + Neon, biến môi trường, `.env.example` | Claude | TODO | | URL production mở được trang đăng nhập |
+| T-09 | Deploy Cloudflare Workers + Supabase Free, biến môi trường, `.env.example` | Claude | TODO | | URL production mở được trang đăng nhập |
+| T-17 | `StorageAdapter` + `GoogleDriveAdapter` (OAuth `drive.file`, refresh token mã hoá) + bảng `files` | Claude | TODO | | Upload 1 ảnh lên Drive của anh Khôi, đọc lại qua endpoint có kiểm tra quyền |
+| T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | TODO | | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
+| T-19 | `outbox_events` + worker gửi (Cron Trigger) | Claude | TODO | | Ghi sự kiện trong transaction, worker gửi sau commit, có retry, không gửi trùng |
+| T-20 | Cron sao lưu: `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản + ping chống pause | Claude | TODO | | Chạy 3 ngày liên tiếp có 3 file; khôi phục thử thành công |
+| T-21 | `tenant_settings` + `tenant_features` (slot 15/30/60, buffer, chế độ phân bổ gói, khoá sổ) | Antigravity | TODO | | Đổi slot sang 15 phút thì lịch hẹn hiển thị đúng |
 
 ## Milestone M1 — Danh mục
 
@@ -55,7 +60,9 @@
 |---|---|---|
 | Q1 | Phạm vi sản phẩm | **1 spa trước, chừa đường mở rộng** — DB có sẵn `tenant_id`, chưa làm UI quản lý tenant |
 | Q2 | Module Phòng khám | **Cần, ưu tiên sớm** → chuyển từ M10 lên **M4** |
-| Q4 | Hạ tầng DB | **Chốt sau**, sau khi cân nhắc chi phí khi scale. Tầng dữ liệu viết trung lập (Prisma + SQL thuần), xem `docs/architecture/02-system-design.md` Phần J |
+| Q4 | Hạ tầng | **Cloudflare Workers + Supabase Free + Google Drive**. Bỏ Vercel (Hobby cấm dùng thương mại). Chi tiết + lý do: [`ADR-002`](./docs/decisions/ADR-002-infrastructure.md) |
+| Q6 | Lưu trữ tệp | **Google Drive 2 TB của anh Khôi**, qua OAuth `drive.file` (service account không dùng được — hạn mức 0 GB), sau lớp `StorageAdapter` |
+| Q7 | Mục tiêu chi phí | **0 đ** khi phát triển → **≈130.000 đ/tháng** khi vận hành thật |
 
 ## ⏸ ĐANG CHỜ: anh Khôi duyệt thiết kế tổng thể
 

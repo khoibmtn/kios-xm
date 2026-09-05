@@ -4,6 +4,10 @@
 > Tài liệu này mô tả **hệ thống sẽ trông như thế nào và chạy ra sao**, để anh Khôi duyệt
 > **trước khi** lập kế hoạch thực thi. Chưa có dòng code nào được viết.
 
+> ⚠️ **BẢN NÀY ĐÃ ĐƯỢC SỬA** sau phản biện chéo. Các phần sau đã bị thay thế — đọc ADR trước:
+> - Data model, quy tắc bất biến, lộ trình → [`ADR-001`](../decisions/ADR-001-design-revisions.md)
+> - Hạ tầng, lưu trữ, sao lưu (Phần I & J bên dưới đã lỗi thời) → [`ADR-002`](../decisions/ADR-002-infrastructure.md)
+
 ---
 
 ## PHẦN A — QUYẾT ĐỊNH NỀN TẢNG (đã chốt)
@@ -423,18 +427,39 @@ chi phí tăng thì **chuyển sang Neon/RDS chỉ cần đổi chuỗi kết n�
 
 ## PHẦN K — LỘ TRÌNH ĐỀ XUẤT (đã cập nhật theo quyết định A2)
 
+> ⚠️ Lộ trình bên dưới **đã lỗi thời** — bản cũ có lỗi phụ thuộc: M3 (POS) cần trừ gói,
+> trừ thẻ, trừ kho và ghi hoa hồng, nhưng những thứ đó lại nằm ở M4/M5/M6.
+> **Lộ trình đúng ở [`ADR-001` §2.3](../decisions/ADR-001-design-revisions.md).** Tóm tắt:
+
+```
+M0    Nền móng (auth, RBAC chi tiết, audit log, outbox, 5 mẫu màn hình)
+M1    Danh mục (4 loại hàng, định mức NVL, cấu hình gói/thẻ, commission_rules)
+M2    Lịch hẹn (3 view: ngày/tuần/theo KTV · chống trùng · ca làm việc)
+M3.1  POS lõi (hoá đơn, thanh toán, sổ quỹ, stock_moves)
+M3.2  Gói/Thẻ + hoa hồng lõi (ledger, 3 vai trò)
+M4    Phòng khám + quản trị gói/thẻ nâng cao
+M5    Kho & mua hàng đầy đủ
+M6    Nhân sự nâng cao + /me (Lịch của tôi, Thu nhập)
+M7    Báo cáo    ·    M8  CSKH    ·    M9  Đặt lịch online + PWA
+```
+
+<details>
+<summary>Lộ trình cũ (giữ để đối chiếu)</summary>
+
 | M | Tên | Nội dung chính | Vì sao thứ tự này |
 |---|---|---|---|
 | **M0** | Nền móng | Next.js + Tailwind + Prisma + Auth + phân quyền + 5 mẫu màn hình | Làm 5 mẫu trước = tăng tốc mọi milestone sau |
 | **M1** | Danh mục | Hàng hoá 4 loại, nhóm/thương hiệu/đơn vị, phòng, nhân viên, khách hàng | Không có dữ liệu nền thì không làm được gì |
 | **M2** | Lịch hẹn | Lưới, đặt lịch, chống trùng, ca làm việc | Trái tim của spa |
 | **M3** | POS | Multi-cart, bán hàng, thanh toán, in, sổ quỹ cơ bản | Bắt đầu tạo ra tiền |
-| **M4** | **Phòng khám + Gói/Thẻ** | Hồ sơ y tế, phiếu khám, album trước/sau · bán & trừ gói/thẻ | ⭐ Ưu tiên sớm theo yêu cầu; gắn chặt với luồng khám–điều trị |
+| **M4** | **Phòng khám + Gói/Thẻ** | Hồ sơ y tế, phiếu khám, album trước/sau · bán & trừ gói/thẻ | ⭐ Ưu tiên sớm theo yêu cầu |
 | **M5** | Kho | NCC, nhập hàng, kiểm kho, định mức NVL, giá vốn | Sau khi có bán hàng mới cần trừ kho chính xác |
 | **M6** | Nhân sự & lương | Ca, chấm công, hoa hồng 3 vai trò, bảng lương | Cần dữ liệu bán hàng tích luỹ mới tính được |
 | **M7** | Báo cáo | 10 báo cáo + dashboard | Cần đủ dữ liệu từ M1–M6 |
 | **M8** | CSKH | Khuyến mại, voucher, điểm, đánh giá, nhắc lịch Zalo | Tăng trưởng, không phải vận hành lõi |
 | **M9** | Đặt lịch online + `/me` | Trang public + PWA cho KTV | Mở rộng ra ngoài |
+
+</details>
 
 ---
 

@@ -30,14 +30,20 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 | Framework | Next.js (App Router) + TypeScript |
 | CSS | **Tailwind CSS** (bắt buộc — yêu cầu của chủ dự án) |
 | UI primitives | shadcn/ui (Radix) |
-| DB | PostgreSQL (Neon/Supabase) |
-| ORM | Prisma |
+| DB | **Supabase Free** — dùng như PostgreSQL có quản lý |
+| ORM | Prisma (SQL thuần, **không** dùng RLS/Edge Function độc quyền) |
 | Auth | Auth.js (credentials + OTP điện thoại) |
+| **Lưu trữ tệp** | **Google Drive** (2 TB của anh Khôi) qua `StorageAdapter` |
 | Lịch hẹn | FullCalendar (React) |
 | Bảng dữ liệu | TanStack Table |
 | Form | react-hook-form + zod |
 | State máy chủ | TanStack Query |
-| Deploy | Vercel |
+| Deploy | **Cloudflare Workers** (Free khi dev → Paid 5 $ khi chạy thật) |
+
+> ⚠️ **Không dùng Vercel.** Gói Hobby cấm dùng cho mục đích thương mại; spa là kinh doanh
+> nên vi phạm điều khoản. Chi tiết: [`ADR-002`](./docs/decisions/ADR-002-infrastructure.md).
+
+**Mục tiêu chi phí**: 0 đ khi phát triển · ≈ 130.000 đ/tháng khi vận hành thật.
 
 **Ràng buộc thiết kế**: tối ưu **cả desktop và điện thoại**.
 - POS/Lịch hẹn: ưu tiên tablet ngang + điện thoại, nút ≥ 44px.
@@ -53,6 +59,30 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 - Mọi bảng nghiệp vụ có `tenant_id` + `branch_id`.
 - Component: PascalCase; hook: `useXxx`; server action: `xxxAction`.
 - Không commit secret. Biến môi trường khai trong `.env.example`.
+
+## 3b. BẢY QUY TẮC DATA MODEL KHÔNG ĐƯỢC VI PHẠM
+
+Rút ra từ phản biện chéo ([`ADR-001`](./docs/decisions/ADR-001-design-revisions.md)).
+Vi phạm những điều này sẽ phải migrate lại dữ liệu thật về sau.
+
+1. **Ghi nhận nghiệp vụ trỏ `employees`, ghi nhận thao tác trỏ `users`.**
+   `performer` / `consultant` / `cashier` → `employees.id`.
+   `created_by_user_id` / `updated_by_user_id` → `users.id`. Không lẫn lộn.
+2. **Dịch vụ luôn sinh `booking_item`**, kể cả khách vãng lai làm ngay.
+   `invoice_items.booking_item_id` là liên kết chính thức (UNIQUE).
+   Thời gian + phòng: nguồn sự thật ở `booking_item`. Giá + giảm giá: ở `invoice_item`.
+3. **Nhiều người cùng làm một dịch vụ** → bảng `invoice_item_employees`
+   (`role`, `contribution_ratio`). Không nhét mảng vào một cột.
+4. **Giá trị buổi trong gói** phân bổ theo **tỷ trọng giá bán lẻ**, lưu snapshot khi bán.
+   Không bao giờ tính lại từ giá hiện hành.
+5. **Ba chỉ tiêu tiền phải tách bạch**: `sale_amount` (tiền khách trả) ·
+   `service_allocated_value` (giá trị buổi dùng từ gói) · `commission_base`.
+   Dashboard doanh thu **chỉ** cộng `sale_amount`.
+6. **Mọi thay đổi số buổi / số dư đi qua ledger** (`package_transactions`,
+   `card_transactions`). Cấm UPDATE trực tiếp `used_sessions` hay `balance`.
+   `customers.debt`, `cash_accounts.balance` chỉ là **giá trị cache**, tính lại được.
+7. **`commission_entries` lưu snapshot của rule** (`calc`, `value`, `base_amount`).
+   Sửa bảng hoa hồng trong tương lai không được làm đổi hoa hồng lịch sử.
 
 ## 4. Quy tắc phối hợp Claude Code ⇄ Antigravity
 
