@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { eq } from 'drizzle-orm'
 import { requirePermission } from '@/lib/auth/session'
 import { db } from '@/lib/db'
+import { tenantSettings } from '@/lib/schema'
 import { getStorage } from '@/lib/storage'
 
 export const metadata = { title: 'Lưu trữ tệp' }
@@ -12,15 +14,16 @@ export default async function StorageSettingsPage({
   const user = await requirePermission('settings.manage')
   const params = await searchParams
 
-  const settings = await db.tenantSettings.findUnique({
-    where: { tenantId: user.tenantId },
-    select: {
-      driveRefreshToken: true,
-      driveRootFolderId: true,
-      driveConnectedAt: true,
-      driveConnectedEmail: true,
-    },
-  })
+  const [settings] = await db
+    .select({
+      driveRefreshToken: tenantSettings.driveRefreshToken,
+      driveRootFolderId: tenantSettings.driveRootFolderId,
+      driveConnectedAt: tenantSettings.driveConnectedAt,
+      driveConnectedEmail: tenantSettings.driveConnectedEmail,
+    })
+    .from(tenantSettings)
+    .where(eq(tenantSettings.tenantId, user.tenantId))
+    .limit(1)
 
   const connected = !!settings?.driveRefreshToken
 

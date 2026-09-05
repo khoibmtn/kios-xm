@@ -19,7 +19,7 @@ dist/
 coverage/
 .turbo/
 next-env.d.ts
-lib/generated/
+# (đã gỡ Prisma)
 
 # Thư mục build của OpenNext — CHỨA BIẾN MÔI TRƯỜNG, tuyệt đối không commit
 .open-next/

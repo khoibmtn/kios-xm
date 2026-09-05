@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
+import { tenantSettings } from '@/lib/schema'
 import { decryptSecret } from '@/lib/crypto'
 import { GoogleDriveAdapter } from './google-drive'
 import { StorageAuthError, type StorageAdapter } from './types'
@@ -13,10 +15,14 @@ export { GoogleDriveAdapter } from './google-drive'
  * của hệ thống không phải sửa gì.
  */
 export async function getStorage(tenantId: string): Promise<StorageAdapter> {
-  const settings = await db.tenantSettings.findUnique({
-    where: { tenantId },
-    select: { driveRefreshToken: true, driveRootFolderId: true },
-  })
+  const [settings] = await db
+    .select({
+      driveRefreshToken: tenantSettings.driveRefreshToken,
+      driveRootFolderId: tenantSettings.driveRootFolderId,
+    })
+    .from(tenantSettings)
+    .where(eq(tenantSettings.tenantId, tenantId))
+    .limit(1)
 
   if (!settings?.driveRefreshToken) {
     throw new StorageAuthError(
@@ -40,9 +46,10 @@ export async function getStorage(tenantId: string): Promise<StorageAdapter> {
 
 /** Đã kết nối lưu trữ chưa — dùng để hiện cảnh báo trên giao diện. */
 export async function isStorageConnected(tenantId: string): Promise<boolean> {
-  const settings = await db.tenantSettings.findUnique({
-    where: { tenantId },
-    select: { driveRefreshToken: true },
-  })
+  const [settings] = await db
+    .select({ driveRefreshToken: tenantSettings.driveRefreshToken })
+    .from(tenantSettings)
+    .where(eq(tenantSettings.tenantId, tenantId))
+    .limit(1)
   return !!settings?.driveRefreshToken
 }

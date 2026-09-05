@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
+import { tenantSettings } from '@/lib/schema'
 import { encryptSecret } from '@/lib/crypto'
 import { GoogleDriveAdapter } from '@/lib/storage'
 import { writeAudit } from '@/lib/audit'
@@ -77,22 +78,20 @@ export async function GET(request: NextRequest) {
     const rootFolderId = await adapter.ensureRootFolder()
     const health = await adapter.healthCheck()
 
-    await db.tenantSettings.upsert({
-      where: { tenantId: session.user.tenantId },
-      update: {
-        driveRefreshToken: await encryptSecret(token.refresh_token),
-        driveRootFolderId: rootFolderId,
-        driveConnectedAt: new Date(),
-        driveConnectedEmail: health.message?.split(' ·')[0] ?? null,
-      },
-      create: {
-        tenantId: session.user.tenantId,
-        driveRefreshToken: await encryptSecret(token.refresh_token),
-        driveRootFolderId: rootFolderId,
-        driveConnectedAt: new Date(),
-        driveConnectedEmail: health.message?.split(' ·')[0] ?? null,
-      },
-    })
+    const driveFields = {
+      driveRefreshToken: await encryptSecret(token.refresh_token),
+      driveRootFolderId: rootFolderId,
+      driveConnectedAt: new Date(),
+      driveConnectedEmail: health.message?.split(' ·')[0] ?? null,
+    }
+
+    await db
+      .insert(tenantSettings)
+      .values({ tenantId: session.user.tenantId, ...driveFields })
+      .onConflictDoUpdate({
+        target: tenantSettings.tenantId,
+        set: driveFields,
+      })
 
     await writeAudit({
       tenantId: session.user.tenantId,

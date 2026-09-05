@@ -20,7 +20,7 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 
 - **Chủ dự án**: anh Khôi (`khoibm.tn@gmail.com`)
 - **Repo**: https://github.com/khoibmtn/kios-xm
-- **Triển khai**: Vercel
+- **Triển khai**: Cloudflare Workers — https://kios-xm.spa-xumay.workers.dev
 - **Ngôn ngữ giao tiếp**: tiếng Việt. Code/tên biến/commit message: tiếng Anh.
 
 ## 2. Stack đã chốt
@@ -30,8 +30,8 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 | Framework | Next.js (App Router) + TypeScript |
 | CSS | **Tailwind CSS** (bắt buộc — yêu cầu của chủ dự án) |
 | UI primitives | shadcn/ui (Radix) |
-| DB | **Supabase Free** — dùng như PostgreSQL có quản lý |
-| ORM | Prisma (SQL thuần, **không** dùng RLS/Edge Function độc quyền) |
+| DB | **Supabase Free** — dùng như PostgreSQL có quản lý (không dùng RLS/Edge Function độc quyền) |
+| ORM | **Drizzle** — Prisma không chạy được trên Workers, xem [`ADR-003`](./docs/decisions/ADR-003-drizzle.md) |
 | Auth | Auth.js (credentials + OTP điện thoại) |
 | **Lưu trữ tệp** | **Google Drive** (2 TB của anh Khôi) qua `StorageAdapter` |
 | Lịch hẹn | FullCalendar (React) |
@@ -51,14 +51,15 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 
 ## 3. Quy ước code
 
-- Thư mục: `app/` (routes) · `components/` · `lib/` · `server/` (actions, services) ·
-  `prisma/` · `docs/`
+- Thư mục: `app/` (routes) · `components/` · `lib/` (gồm `lib/schema/` — lược đồ CSDL) ·
+  `server/` (actions, services) · `drizzle/` (migration SQL) · `scripts/` · `docs/`
 - Tên bảng/cột DB: `snake_case` tiếng Anh. Nhãn hiển thị: tiếng Việt (qua `lib/labels.ts`).
 - Tiền tệ: lưu `numeric`, không dùng float. Hiển thị `vi-VN`, đơn vị VND, không số lẻ.
 - Thời gian: lưu `timestamptz` UTC, hiển thị theo `Asia/Ho_Chi_Minh`.
 - Mọi bảng nghiệp vụ có `tenant_id` + `branch_id`.
 - Component: PascalCase; hook: `useXxx`; server action: `xxxAction`.
-- Không commit secret. Biến môi trường khai trong `.env.example`.
+- Không commit secret. Biến môi trường khai trong `env.example`.
+- ⚠️ Không commit `.open-next/` và `.wrangler/` — thư mục build có nhúng biến môi trường.
 
 ## 3b. BẢY QUY TẮC DATA MODEL KHÔNG ĐƯỢC VI PHẠM
 
@@ -126,7 +127,7 @@ Khi cần khảo sát thêm:
 ## 6. Định nghĩa "xong" (Definition of Done)
 
 Một task chỉ được đánh `DONE` khi:
-1. Code chạy được (`pnpm build` không lỗi).
+1. Code chạy được (`npm run build` không lỗi).
 2. Đúng **tất cả** tiêu chí nghiệm thu ghi trong task.
 3. Responsive: kiểm tra ở 375px, 768px, 1440px.
 4. Tiếng Việt đúng chính tả, có dấu.

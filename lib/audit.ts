@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import type { Prisma } from '@/lib/generated/prisma/client'
+import { auditLog } from '@/lib/schema'
 
 /**
  * Nhật ký thao tác.
@@ -7,8 +7,8 @@ import type { Prisma } from '@/lib/generated/prisma/client'
  * BẮT BUỘC ghi với: thay đổi tiền, thay đổi lịch hẹn, truy cập hồ sơ y tế,
  * sửa người thực hiện/tư vấn trên hoá đơn đã hoàn tất, điều chỉnh số buổi gói.
  *
- * Hàm nhận `client` để có thể ghi CHUNG transaction với nghiệp vụ —
- * nếu nghiệp vụ rollback thì log cũng biến mất, tránh log sai sự thật.
+ * Hàm nhận `client` để ghi CHUNG transaction với nghiệp vụ — nếu nghiệp vụ
+ * cuộn ngược thì log cũng biến mất, tránh ghi lại việc chưa từng xảy ra.
  */
 
 export type AuditAction =
@@ -29,29 +29,28 @@ export interface AuditInput {
   action: AuditAction
   before?: unknown
   after?: unknown
-  /** Bắt buộc với các hành động điều chỉnh/huỷ — phục vụ báo cáo và đối soát. */
+  /** Bắt buộc với hành động điều chỉnh/huỷ — phục vụ đối soát về sau. */
   reason?: string
   ipAddress?: string | null
 }
 
-type DbClient = typeof db | Prisma.TransactionClient
+/** `db` hoặc tham số `tx` bên trong `db.transaction(...)`. */
+type DbClient = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export async function writeAudit(
   input: AuditInput,
   client: DbClient = db,
 ): Promise<void> {
-  await client.auditLog.create({
-    data: {
-      tenantId: input.tenantId,
-      userId: input.userId ?? null,
-      entity: input.entity,
-      entityId: input.entityId,
-      action: input.action,
-      before: (input.before ?? undefined) as Prisma.InputJsonValue | undefined,
-      after: (input.after ?? undefined) as Prisma.InputJsonValue | undefined,
-      reason: input.reason,
-      ipAddress: input.ipAddress ?? null,
-    },
+  await client.insert(auditLog).values({
+    tenantId: input.tenantId,
+    userId: input.userId ?? null,
+    entity: input.entity,
+    entityId: input.entityId,
+    action: input.action,
+    before: input.before ?? null,
+    after: input.after ?? null,
+    reason: input.reason ?? null,
+    ipAddress: input.ipAddress ?? null,
   })
 }
 
@@ -59,7 +58,7 @@ export async function writeAudit(
  * Ghi lại việc XEM hồ sơ y tế.
  *
  * Dữ liệu y tế của khách là thông tin nhạy cảm: ai mở, mở của ai, lúc nào —
- * đều phải truy được. Gọi hàm này ngay trước khi trả dữ liệu về giao diện.
+ * đều phải truy được. Gọi ngay trước khi trả dữ liệu về giao diện.
  */
 export async function auditMedicalAccess(params: {
   tenantId: string
@@ -87,11 +86,9 @@ export function diffFields<T extends Record<string, unknown>>(
   const a: Partial<T> = {}
 
   for (const key of Object.keys(after) as (keyof T)[]) {
-    const oldValue = before[key]
-    const newValue = after[key]
-    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-      b[key] = oldValue
-      a[key] = newValue as T[keyof T]
+    if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+      b[key] = before[key]
+      a[key] = after[key] as T[keyof T]
     }
   }
 

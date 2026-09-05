@@ -2,8 +2,10 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { and, eq } from 'drizzle-orm'
 import { authConfig } from './auth.config'
 import { db } from '@/lib/db'
+import { branches, employees, roles, tenants, userBranchRoles, users } from '@/lib/schema'
 
 const credentialsSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -26,46 +28,65 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { email, password } = parsed.data
 
-        const user = await db.user.findFirst({
-          where: { email, isActive: true },
-          include: {
-            tenant: true,
-            employee: { select: { id: true } },
-            branchRoles: {
-              include: {
-                branch: { select: { id: true, name: true, isDefault: true, isActive: true } },
-                role: { select: { code: true, permissions: true } },
-              },
-            },
-          },
-        })
+        const [user] = await db
+          .select({
+            id: users.id,
+            email: users.email,
+            fullName: users.fullName,
+            avatarUrl: users.avatarUrl,
+            passwordHash: users.passwordHash,
+            tenantId: users.tenantId,
+            tenantName: tenants.name,
+            tenantActive: tenants.isActive,
+          })
+          .from(users)
+          .innerJoin(tenants, eq(tenants.id, users.tenantId))
+          .where(and(eq(users.email, email), eq(users.isActive, true)))
+          .limit(1)
 
-        if (!user?.passwordHash) return null
-        if (!user.tenant.isActive) return null
+        if (!user?.passwordHash || !user.tenantActive) return null
 
         const ok = await bcrypt.compare(password, user.passwordHash)
         if (!ok) return null
 
-        // Chi nhánh mặc định khi đăng nhập: ưu tiên chi nhánh được đánh dấu mặc định
-        const activeRoles = user.branchRoles.filter((br) => br.branch.isActive)
-        if (activeRoles.length === 0) return null
+        // Vai trò của người này tại các chi nhánh còn hoạt động
+        const assignments = await db
+          .select({
+            branchId: branches.id,
+            branchName: branches.name,
+            branchIsDefault: branches.isDefault,
+            roleCode: roles.code,
+            rolePermissions: roles.permissions,
+          })
+          .from(userBranchRoles)
+          .innerJoin(branches, eq(branches.id, userBranchRoles.branchId))
+          .innerJoin(roles, eq(roles.id, userBranchRoles.roleId))
+          .where(and(eq(userBranchRoles.userId, user.id), eq(branches.isActive, true)))
 
-        const chosen =
-          activeRoles.find((br) => br.branch.isDefault) ?? activeRoles[0]
+        if (assignments.length === 0) return null
+
+        // Chi nhánh khi đăng nhập: ưu tiên chi nhánh được đánh dấu mặc định
+        const chosen = assignments.find((a) => a.branchIsDefault) ?? assignments[0]
 
         // Gộp quyền của mọi vai trò tại chi nhánh đang chọn
         const permissions = [
           ...new Set(
-            activeRoles
-              .filter((br) => br.branch.id === chosen.branch.id)
-              .flatMap((br) => br.role.permissions),
+            assignments
+              .filter((a) => a.branchId === chosen.branchId)
+              .flatMap((a) => a.rolePermissions ?? []),
           ),
         ]
 
-        await db.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        })
+        const [employee] = await db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.userId, user.id))
+          .limit(1)
+
+        await db
+          .update(users)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(users.id, user.id))
 
         return {
           id: user.id,
@@ -73,11 +94,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.fullName,
           image: user.avatarUrl,
           tenantId: user.tenantId,
-          tenantName: user.tenant.name,
-          branchId: chosen.branch.id,
-          branchName: chosen.branch.name,
-          employeeId: user.employee?.id ?? null,
-          roleCodes: [...new Set(activeRoles.map((br) => br.role.code))],
+          tenantName: user.tenantName,
+          branchId: chosen.branchId,
+          branchName: chosen.branchName,
+          employeeId: employee?.id ?? null,
+          roleCodes: [...new Set(assignments.map((a) => a.roleCode))],
           permissions,
         }
       },

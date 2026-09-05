@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
+import { count } from 'drizzle-orm'
 import { db } from '@/lib/db'
+import { branches, roles, tenants, users } from '@/lib/schema'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,11 +10,11 @@ export async function GET() {
   const startedAt = Date.now()
 
   try {
-    const [tenants, branches, roles, users] = await Promise.all([
-      db.tenant.count(),
-      db.branch.count(),
-      db.role.count(),
-      db.user.count(),
+    const [t, b, r, u] = await Promise.all([
+      db.select({ n: count() }).from(tenants),
+      db.select({ n: count() }).from(branches),
+      db.select({ n: count() }).from(roles),
+      db.select({ n: count() }).from(users),
     ])
 
     return NextResponse.json({
@@ -20,7 +22,12 @@ export async function GET() {
       database: {
         connected: true,
         latencyMs: Date.now() - startedAt,
-        counts: { tenants, branches, roles, users },
+        counts: {
+          tenants: t[0].n,
+          branches: b[0].n,
+          roles: r[0].n,
+          users: u[0].n,
+        },
       },
       storage: {
         provider: 'google_drive',

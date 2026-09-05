@@ -9,9 +9,9 @@
 |---|---|
 | Milestone đang làm | **M0 — Nền móng** (đang code) |
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
-| Ứng dụng đã deploy | **Có** — https://kios-xm.spa-xumay.workers.dev (⚠ tầng dữ liệu chưa chạy, xem Sự cố) |
+| Ứng dụng đã deploy | **Có, chạy đầy đủ** — https://kios-xm.spa-xumay.workers.dev |
 | Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
-| Số task DONE | 5 / 21 (M0+M1) — T-01, T-03, T-04, T-17, T-18 |
+| Số task DONE | 6 / 21 (M0+M1) — T-01, T-03, T-04, T-09, T-17, T-18 |
 
 ## Nhật ký
 
@@ -27,6 +27,7 @@
 | 2026-09-05 | Claude Code | **T-01 + T-03 xong**: Next.js 16 + Tailwind 4 + font Be Vietnam Pro, Prisma 7 + Supabase (13 bảng), 43 quyền chi tiết + 5 vai trò, seed spa/chi nhánh/chủ. `npm run build` sạch, `/api/health` báo DB ok | `app/`, `lib/`, `prisma/`, `package.json` |
 | 2026-09-05 | Claude Code | **T-04 + T-18 xong**: Auth.js v5 (JWT 12h, session mang tenant/branch/quyền), trang đăng nhập, chặn route, trang 403, `audit_log` service. Kiểm chứng thật: lễ tân chỉ 14/43 quyền, thấy cảnh báo y tế nhưng không mở được chẩn đoán | `auth.ts`, `auth.config.ts`, `proxy.ts`, `app/login/`, `app/admin/`, `lib/auth/`, `lib/audit.ts` |
 | 2026-09-05 | Claude Code | **T-17 xong**: kết nối Google Drive thật (tài khoản Xumây Hương, còn ~1.790 GB). Kiểm chứng đầu-cuối: tải ảnh lên → ghi bảng `files` → đọc lại khớp từng byte → xoá sạch | `lib/storage/`, `lib/crypto.ts`, `app/api/drive/`, `scripts/check-storage.ts` |
+| 2026-09-05 | Claude Code | **T-09 xong**: deploy Cloudflare Workers thành công. Gặp bug Prisma 7 + WASM → **đổi ORM sang Drizzle** (ADR-003), lược đồ đọc ngược từ CSDL đang chạy nên không mất dữ liệu. Production kiểm chứng: đăng nhập + phân quyền 14/43 của lễ tân đều đúng | `lib/schema/`, `lib/db.ts`, `auth.ts`, `scripts/seed.ts`, `wrangler.jsonc`, `ADR-003` |
 
 ## Sự cố / bài học
 
@@ -40,7 +41,9 @@
 
 | 2026-09-05 | **Auth.js v5 tự host**: mặc định chỉ tin Host header khi chạy trên Vercel; tự host phải đặt `trustHost: true`, nếu không mọi request đều `UntrustedHost`. **Next 16** đã đổi quy ước `middleware.ts` → `proxy.ts`. **Module augmentation của next-auth** không ăn với `AdapterUser`/`JWT` trong bản beta hiện tại — phải khai kiểu tường minh rồi ép kiểu trong callback. |
 
-| 2026-09-05 | **Prisma 7 chưa chạy được trên Cloudflare Workers.** Client sinh ra biên dịch WASM lúc chạy, mà Workers cấm (`Wasm code generation disallowed by embedder`). Đã thử generator `prisma-client` với `runtime="workerd"` + `moduleFormat="esm"` — vẫn lỗi, vì OpenNext nhúng WASM dạng base64 khi đóng gói nên không còn là import tĩnh. Đây là bug đã biết của Prisma (issue 28657), chưa có bản vá. Ứng dụng **đã deploy và phục vụ được** ở `kios-xm.spa-xumay.workers.dev`; chỉ phần truy vấn cơ sở dữ liệu là hỏng. |
+| 2026-09-05 | **Prisma 7 chưa chạy được trên Cloudflare Workers.** Client sinh ra biên dịch WASM lúc chạy, mà Workers cấm (`Wasm code generation disallowed by embedder`). Đã thử generator `prisma-client` với `runtime="workerd"` + `moduleFormat="esm"` — vẫn lỗi, vì OpenNext nhúng WASM dạng base64 khi đóng gói nên không còn là import tĩnh. Đây là bug đã biết của Prisma (issue 28657), chưa có bản vá. Ứng dụng **đã deploy và phục vụ được**; chỉ phần truy vấn cơ sở dữ liệu hỏng. → **Đã xử lý bằng cách đổi sang Drizzle**, xem `ADR-003`. |
+
+| 2026-09-05 | **Bài học nền tảng:** chốt Prisma trong `AGENTS.md` và chốt Cloudflare trong `ADR-002` ở hai thời điểm khác nhau, không ai kiểm chứng hai thứ chạy cùng nhau. Xung đột chỉ lộ ra sau khi đã viết xong xác thực, phân quyền và lưu trữ. ⇒ **Deploy thử ngay sau khi dựng xong nền móng**, đừng đợi tới lúc có nhiều tính năng. |
 
 ## Ghi chú kỹ thuật cần nhớ
 
