@@ -21,8 +21,8 @@
 | T-04 | Auth.js: đăng nhập email/mật khẩu, session mang `tenantId` + `branchId` | Claude | DONE | Claude 05/09 | Đăng nhập/đăng xuất; route `(admin)` chặn khi chưa đăng nhập |
 | T-05 | Layout Quản trị: topbar + sidebar theo cây menu trong `docs/research/01-module-map.md` | Antigravity | TODO | | Đủ nhóm menu; thu gọn được; mobile có drawer; active state đúng |
 | T-06 | Layout POS: header 2 tab (Lịch hẹn / Bán hàng), không sidebar | Antigravity | TODO | | Chạy tốt ở 1024×768 ngang và 375px |
-| T-07 | Component `DataTable` dùng chung (TanStack Table): sidebar lọc + bảng + dòng tổng + phân trang + tuỳ chỉnh cột + xuất file | Claude | TODO | | Dùng lại được cho ≥2 module; mobile tự chuyển sang dạng thẻ |
-| T-08 | Chuẩn hoá tiền tệ/ngày giờ: `lib/format.ts` (VND, `vi-VN`, `Asia/Ho_Chi_Minh`) | Antigravity | TODO | | `formatMoney(1500000)` → `1.500.000`; test đơn vị |
+| T-07 | Component `DataTable` dùng chung (TanStack Table): sidebar lọc + bảng + dòng tổng + phân trang + tuỳ chỉnh cột + xuất file | Claude | DOING | Claude 05/09 | Dùng lại được cho ≥2 module; mobile tự chuyển sang dạng thẻ |
+| T-08 | Chuẩn hoá tiền tệ/ngày giờ: `lib/format.ts` (VND, `vi-VN`, `Asia/Ho_Chi_Minh`) | Claude | DOING | Claude 05/09 — chuyển từ Antigravity vì T-07 phụ thuộc | `formatMoney(1500000)` → `1.500.000`; test đơn vị |
 | T-09 | Deploy Cloudflare Workers + Supabase Free, biến môi trường, `env.example` | Claude | DONE | Claude 05/09 | URL production mở được trang đăng nhập |
 | T-17 | `StorageAdapter` + `GoogleDriveAdapter` (OAuth `drive.file`, refresh token mã hoá) + bảng `files` | Claude | DONE | Claude 05/09 | Upload 1 ảnh lên Drive của anh Khôi, đọc lại qua endpoint có kiểm tra quyền |
 | T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | DONE | Claude 05/09 | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
