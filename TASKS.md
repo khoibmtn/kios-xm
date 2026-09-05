@@ -27,7 +27,7 @@
 | T-17 | `StorageAdapter` + `GoogleDriveAdapter` (OAuth `drive.file`, refresh token mã hoá) + bảng `files` | Claude | DONE | Claude 05/09 | Upload 1 ảnh lên Drive của anh Khôi, đọc lại qua endpoint có kiểm tra quyền |
 | T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | DONE | Claude 05/09 | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
 | T-19 | `outbox_events` + worker gửi (GitHub Actions cron) | Claude | DONE | Claude 05/09 | Ghi sự kiện trong transaction, worker gửi sau commit, có retry, không gửi trùng |
-| T-20 | Cron sao lưu: `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản + ping chống pause | Claude | REVIEW | Claude 05/09 — chờ anh Khôi thêm GitHub secrets | Chạy 3 ngày liên tiếp có 3 file; khôi phục thử thành công |
+| T-20 | Cron sao lưu: `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản + ping chống pause + **khôi phục thử tự động** | Claude | DONE | Claude 05/09 | Chạy 3 ngày liên tiếp có 3 file; khôi phục thử thành công |
 | T-21 | `tenant_settings` + `tenant_features` (slot 15/30/60, buffer, chế độ phân bổ gói, khoá sổ) | Antigravity | TODO | | Đổi slot sang 15 phút thì lịch hẹn hiển thị đúng |
 
 ## Milestone M1 — Danh mục

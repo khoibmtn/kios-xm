@@ -7,11 +7,11 @@
 
 | Mục | Giá trị |
 |---|---|
-| Milestone đang làm | **M0 — Nền móng** (đang code) |
+| Milestone đang làm | **M0 — Nền móng** — xong phần của Claude, còn 4 task giao diện của Antigravity |
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
 | Ứng dụng đã deploy | **Có, chạy đầy đủ** — https://kios-xm.spa-xumay.workers.dev |
 | Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
-| Số task DONE | 9 / 21 (M0+M1) — T-01, T-03, T-04, T-07, T-08, T-09, T-17, T-18, T-19 · T-20 chờ secrets |
+| Số task DONE | 10 / 21 (M0+M1) — T-01, T-03, T-04, T-07, T-08, T-09, T-17, T-18, T-19, T-20 |
 
 ## Nhật ký
 
@@ -30,6 +30,7 @@
 | 2026-09-05 | Claude Code | **T-09 xong**: deploy Cloudflare Workers thành công. Gặp bug Prisma 7 + WASM → **đổi ORM sang Drizzle** (ADR-003), lược đồ đọc ngược từ CSDL đang chạy nên không mất dữ liệu. Production kiểm chứng: đăng nhập + phân quyền 14/43 của lễ tân đều đúng | `lib/schema/`, `lib/db.ts`, `auth.ts`, `scripts/seed.ts`, `wrangler.jsonc`, `ADR-003` |
 | 2026-09-05 | Claude Code | **T-07 + T-08 xong**: `DataTable` dùng chung (lọc, sắp xếp, tuỳ chỉnh cột, xuất CSV cho Excel VN, phân trang, tự chuyển dạng thẻ trên điện thoại) + `lib/format.ts`. Kiểm chứng bằng **2 màn hình thật** trên production: Nhân viên và Nhật ký thao tác | `components/data-table/`, `lib/format.ts`, `app/admin/employees/`, `app/admin/audit/` |
 | 2026-09-05 | Claude Code | **T-19 xong, T-20 chờ secrets**: hộp thư đi có trạng thái `processing` chống mất việc khi tiến trình chết, `FOR UPDATE SKIP LOCKED` chống gửi trùng, thử lại tối đa 5 lần. Kiểm chứng production: 3 việc → 2 gửi, 1 hỏng; chạy lại claimed=0. Sao lưu chuyển sang GitHub Actions vì `pg_dump` không chạy trên Workers | `lib/outbox.ts`, `app/api/cron/outbox/`, `scripts/backup.ts`, `.github/workflows/` |
+| 2026-09-05 | Claude Code | **T-20 xong**: sao lưu tự động lên Drive 02:00 hằng ngày, giữ 30 bản, **kèm khôi phục thử vào Postgres trống mỗi lượt chạy** — đối chiếu số bản ghi khớp 5/5 bảng. Cron 15 phút chạy hộp thư đi và giữ nhịp chống Supabase tạm dừng. Đã nạp 6 GitHub secrets | `.github/workflows/`, `scripts/backup.ts`, `scripts/verify-backup.ts` |
 
 ## Sự cố / bài học
 
@@ -50,6 +51,8 @@
 | 2026-09-05 | **Ba cái bẫy khi deploy lên Workers**: (1) `opennextjs-cloudflare deploy` **không tự build lại** — chạy `next build` rồi deploy sẽ đẩy bundle cũ, route mới trả 404. Đã gộp build vào script `cf:deploy`. (2) **Không được giữ connection pool dùng chung** giữa các request: Worker bị đóng băng giữa các lần gọi, kết nối TCP đứt, request sau ném `Error 1101`. Phải tạo kết nối theo từng request (`maxUses: 1` + React `cache()`). (3) **TanStack Table v9** tuy là bản ổn định mới nhất nhưng đổi hẳn sang mô hình atoms/features, rất ít ví dụ thực tế — đã ghim **v8.21.3** cho chắc. |
 
 | 2026-09-05 | **Cột `id` thiếu DEFAULT sau khi rời Prisma.** Prisma sinh UUID ở tầng ứng dụng nên cơ sở dữ liệu không có `DEFAULT`; Drizzle gửi từ khoá `DEFAULT` khi chèn nên vi phạm NOT NULL. Đã chạy `0002_uuid_defaults.sql` đặt `gen_random_uuid()` cho cả 10 bảng. Bài học: khi đổi ORM, phải kiểm tra cả những mặc định vốn nằm ở tầng ứng dụng. |
+
+| 2026-09-05 | **Bốn cái bẫy khi dựng CI**: (1) `npm ci` từ chối chạy vì lock sinh trên macOS thiếu optional dependency của Linux (`@emnapi/*`) — đổi sang `npm install` cho job chạy ngày một lần. (2) Ubuntu có sẵn `pg_dump` 16 đứng trước trong PATH, mà `pg_dump` từ chối chạy với máy chủ mới hơn (17.6) — phải trỏ thẳng `/usr/lib/postgresql/17/bin`. (3) Lỗi `execFile` chỉ nói "Command failed" và che chuỗi kết nối — phải tự lấy `stderr` mới biết nguyên nhân. (4) `env.example` để `GOOGLE_REFRESH_TOKEN=""`, mà `??` chỉ bắt null/undefined nên chuỗi rỗng lọt qua — dùng `||`. |
 
 ## Ghi chú kỹ thuật cần nhớ
 
