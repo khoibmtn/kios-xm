@@ -36,7 +36,7 @@
 |---|---|---|---|---|---|
 | T-10 | Schema danh mục: categories, brands, products (4 `kind`), variants, package_items, service_materials | Claude | DONE | Claude 05/09 | Migrate sạch; ràng buộc `kind` đúng; seed dữ liệu mẫu |
 | T-11 | Trang Danh sách hàng hoá: bảng + sidebar lọc (loại, nhóm, thương hiệu, tồn kho, trạng thái) | Claude | DONE | Claude 05/09 | Lọc hoạt động; badge màu theo `kind`; phân trang |
-| T-12 | Form thêm/sửa hàng hoá — tab theo `kind` (Sản phẩm / Dịch vụ / Gói / Thẻ) | Claude | TODO | | Dịch vụ có `duration`; Gói có danh sách buổi; Thẻ có mệnh giá + tặng<br>*Đã có: trang chi tiết chỉ đọc + logic phân bổ giá gói* Dịch vụ có `duration`; Gói có danh sách buổi; Thẻ có mệnh giá + tặng |
+| T-12 | Form thêm/sửa hàng hoá — tab theo `kind` (Sản phẩm / Dịch vụ / Gói / Thẻ) | Claude | DOING | Claude 05/09 | Dịch vụ có `duration`; Gói có danh sách buổi; Thẻ có mệnh giá + tặng<br>*Đã có: trang chi tiết chỉ đọc + logic phân bổ giá gói* Dịch vụ có `duration`; Gói có danh sách buổi; Thẻ có mệnh giá + tặng |
 | T-13 | Quản lý nhóm hàng (cây) + thương hiệu + đơn vị tính | Antigravity | TODO | | CRUD đủ; nhóm hàng nhiều cấp |
 | T-14 | Vị trí/phòng + nhóm vị trí | Antigravity | TODO | | CRUD; trường: tên, ghi chú, nhóm, trạng thái, số thứ tự |
 | T-15 | Nhân viên: CRUD + phòng ban + chức danh | Any | TODO | | Đủ trường trong `docs/research/03-ux-flows.md` §5 |
