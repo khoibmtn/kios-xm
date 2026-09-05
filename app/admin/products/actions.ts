@@ -223,12 +223,15 @@ export async function saveProductAction(
     revalidatePath(`/admin/products/${savedId}`)
     return { savedId }
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Lỗi không xác định'
+    const message = e instanceof Error ? e.message : String(e)
     // Ràng buộc UNIQUE của cơ sở dữ liệu là nơi bắt trùng mã cuối cùng
     if (message.includes('products_tenant_code_key')) {
       return { error: 'Mã hàng này đã tồn tại.', fieldErrors: { code: 'Mã đã được dùng' } }
     }
-    return { error: `Không lưu được: ${message}` }
+    // Lỗi gốc của Drizzle mang theo cả câu lệnh và tham số — không phải thứ để
+    // in lên màn hình. Chi tiết vào nhật ký Worker, người dùng nhận câu đọc được.
+    console.error('[saveProductAction]', message)
+    return { error: 'Không lưu được. Vui lòng thử lại — lỗi đã được ghi lại để kiểm tra.' }
   }
 }
 

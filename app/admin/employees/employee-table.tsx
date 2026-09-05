@@ -1,6 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, type PaginationState } from '@/components/data-table/data-table'
 import { Badge, FilterGroup, RadioFilter, SelectFilter } from '@/components/data-table/filters'
@@ -24,7 +27,8 @@ export interface EmployeeRow {
 
 type StatusFilter = 'working' | 'left' | 'all'
 
-export function EmployeeTable({ rows }: { rows: EmployeeRow[] }) {
+export function EmployeeTable({ rows, canManage }: { rows: EmployeeRow[]; canManage: boolean }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<StatusFilter>('working')
   const [department, setDepartment] = useState('')
@@ -104,6 +108,18 @@ export function EmployeeTable({ rows }: { rows: EmployeeRow[] }) {
       pagination={pagination}
       onPaginationChange={setPagination}
       storageKey="employees"
+      onRowClick={canManage ? (r) => router.push(`/admin/employees/${r.id}/edit`) : undefined}
+      actions={
+        canManage ? (
+          <Link
+            href="/admin/employees/new"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium"
+          >
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">Thêm nhân viên</span>
+          </Link>
+        ) : undefined
+      }
       search={{
         value: search,
         onChange: (v) => {

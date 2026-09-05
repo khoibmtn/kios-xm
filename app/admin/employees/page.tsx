@@ -1,5 +1,5 @@
 import { desc, eq } from 'drizzle-orm'
-import { requirePermission } from '@/lib/auth/session'
+import { requirePermission, can } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { branches, departments, employees, positions } from '@/lib/schema'
 import { EmployeeTable, type EmployeeRow } from './employee-table'
@@ -41,7 +41,7 @@ export default async function EmployeesPage() {
         </p>
       </div>
 
-      <EmployeeTable rows={rows} />
+      <EmployeeTable rows={rows} canManage={can(user, 'employee.manage')} />
     </div>
   )
 }

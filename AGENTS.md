@@ -61,6 +61,33 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 - Không commit secret. Biến môi trường khai trong `env.example`.
 - ⚠️ Không commit `.open-next/` và `.wrangler/` — thư mục build có nhúng biến môi trường.
 
+## 3c. NĂM CÁI BẪY ĐÃ CẮN THẬT
+
+Tất cả đều lọt qua TypeScript, `next build` và kiểm thử đơn vị; chỉ lộ ra khi
+bấm thử trên bản đã triển khai. Đọc kỹ trước khi viết form hay server action.
+
+1. **Migration chạy qua `npm run db:migrate`, không chạy tay.** Áp theo thứ tự
+   tên, mỗi tệp một giao dịch, ghi lịch sử vào bảng `applied_migrations`. Sau
+   bất kỳ thay đổi lược đồ nào, chạy `npm run db:check` để đối chiếu lược đồ
+   Drizzle với cơ sở dữ liệu thật — nó bắt cả tên cột lệch lẫn cột NOT NULL
+   thiếu DEFAULT.
+2. **`.defaultNow()` của Drizzle chỉ dùng khi sinh DDL.** Lúc chạy, Drizzle gửi
+   từ khoá `DEFAULT` cho cột không truyền giá trị; cột NOT NULL mà cơ sở dữ
+   liệu không có DEFAULT thật thì câu chèn hỏng. Mặc định phải nằm trong CSDL.
+3. **File `'use server'` chỉ chứa action thật.** Mọi export của module đó đều
+   thành điểm gọi được từ trình duyệt — một hàm phụ trợ nhận `tenantId` và
+   không kiểm tra quyền là cửa đọc dữ liệu của spa khác. Hàm trợ giúp render
+   để ở module thường.
+4. **Hằng số dùng chung giữa server và client phải ở module trung tính.** Server
+   component import giá trị từ file có `'use client'` chỉ nhận về một *client
+   reference* rỗng, không phải giá trị thật — `{...HANG_SO}` sẽ ra object
+   thiếu trường và trang đổ lúc render.
+5. **FormData: ô để trống là chuỗi rỗng, ô không được vẽ ra thì vắng mặt hẳn.**
+   `z.coerce.number()` biến `''` thành `0` (ghi 0 vào ô "chưa khai"), còn
+   trường vắng mặt làm `z.string()` báo lỗi ở ô người dùng không nhìn thấy —
+   màn hình chỉ hiện "kiểm tra lại các ô được đánh dấu" mà chẳng ô nào đỏ. Mọi
+   trường không bắt buộc phải `.optional()` và quy chuỗi rỗng về `undefined`.
+
 ## 3b. BẢY QUY TẮC DATA MODEL KHÔNG ĐƯỢC VI PHẠM
 
 Rút ra từ phản biện chéo ([`ADR-001`](./docs/decisions/ADR-001-design-revisions.md)).

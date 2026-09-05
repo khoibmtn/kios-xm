@@ -15,6 +15,8 @@
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:check": "tsx scripts/check-schema-sync.ts",
     "test": "tsx --test \"lib/**/*.test.ts\""
   },
   "dependencies": {

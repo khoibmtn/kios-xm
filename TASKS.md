@@ -39,7 +39,8 @@
 | T-12 | Form thêm/sửa hàng hoá — tab theo `kind` (Sản phẩm / Dịch vụ / Gói / Thẻ) | Claude | DONE | Claude 05/09 | Đã tạo + sửa thật một gói 2 dịch vụ trên bản triển khai: mã tự sinh, xem trước phân bổ khớp trang chi tiết, nhật ký ghi cả `create` lẫn `update` |
 | T-13 | Quản lý nhóm hàng (cây) + thương hiệu + đơn vị tính | Antigravity | TODO | | CRUD đủ; nhóm hàng nhiều cấp |
 | T-14 | Vị trí/phòng + nhóm vị trí | Antigravity | TODO | | CRUD; trường: tên, ghi chú, nhóm, trạng thái, số thứ tự |
-| T-15 | Nhân viên: CRUD + phòng ban + chức danh | Any | TODO | | Đủ trường trong `docs/research/03-ux-flows.md` §5 |
+| T-15 | Nhân viên: CRUD + phòng ban + chức danh | Any | DONE | Claude 05/09 | Đã thêm + sửa + cho nghỉ việc một hồ sơ thật trên bản triển khai; phòng ban/chức danh tạo nhanh ngay trong form; nhật ký ghi rõ "Ngừng làm việc từ …" |
+| T-22 | Cấp tài khoản đăng nhập cho nhân viên + gán vai trò theo chi nhánh (`user_branch_roles`) | Claude | TODO | | Tạo tài khoản từ hồ sơ nhân viên, đặt mật khẩu ban đầu, đăng nhập được đúng quyền |
 | T-16 | Nhập/Xuất Excel hàng hoá & khách hàng | Antigravity | TODO | | Nhập 196 dòng mẫu không lỗi; xuất đúng cột |
 
 ## Backlog (mở chi tiết khi tới milestone)
