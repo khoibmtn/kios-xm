@@ -7,11 +7,11 @@
 
 | Mục | Giá trị |
 |---|---|
-| Milestone đang làm | **M0 — Nền móng** (chưa bắt đầu code) |
+| Milestone đang làm | **M0 — Nền móng** (đang code) |
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
-| Ứng dụng đã deploy | Chưa |
-| Schema DB | Mới ở dạng thiết kế trong `docs/research/02-data-model.md` §B |
-| Số task DONE | 0 / 16 (M0+M1) |
+| Ứng dụng đã deploy | Chưa (chạy được ở máy: `npm run dev`) |
+| Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
+| Số task DONE | 2 / 21 (M0+M1) — T-01, T-03 |
 
 ## Nhật ký
 
@@ -24,6 +24,7 @@
 | 2026-09-05 | Claude Code | **Phản biện chéo + sửa 3 lỗi kiến trúc** (employees/users, booking↔invoice, phân bổ giá gói); chốt hạ tầng chi phí tối thiểu + Google Drive | `docs/decisions/ADR-001`, `ADR-002`, `AGENTS.md`, `02-data-model.md`, `TASKS.md` |
 | 2026-09-05 | Claude Code | Nhận thông tin OAuth + Drive từ anh Khôi. Chặn `client_secret*.json` khỏi git, tạo `env.example` và `.env.local` (chmod 600). Phát hiện `drive.file` không ghi được vào thư mục có sẵn → ứng dụng sẽ tự tạo thư mục gốc | `.gitignore`, `env.example`, `ADR-002 §2.2` |
 | 2026-09-05 | Claude Code | Cấu hình xong Google Cloud (scope `drive.file`, redirect URI, 2 test users) và lấy chuỗi kết nối Supabase (Tokyo). Publish OAuth app còn vướng vì chưa có tên miền | `ADR-002 §2.6, §3.5`, `.env.local` |
+| 2026-09-05 | Claude Code | **T-01 + T-03 xong**: Next.js 16 + Tailwind 4 + font Be Vietnam Pro, Prisma 7 + Supabase (13 bảng), 43 quyền chi tiết + 5 vai trò, seed spa/chi nhánh/chủ. `npm run build` sạch, `/api/health` báo DB ok | `app/`, `lib/`, `prisma/`, `package.json` |
 
 ## Sự cố / bài học
 

@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/*
+ * Design token của kios-xm.
+ * Màu chủ đạo teal — khác hẳn xanh dương của KiotViet, tránh nhìn như bản sao.
+ * Mọi màu khai ở đây, KHÔNG hard-code mã màu trong component.
+ */
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0d9488;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+
+  /* Màu nhận diện 4 loại hàng hoá — dùng thống nhất toàn hệ thống */
+  --kind-product: #16a34a;
+  --kind-service: #0284c7;
+  --kind-package: #db2777;
+  --kind-card: #9333ea;
+
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-kind-product: var(--kind-product);
+  --color-kind-service: var(--kind-service);
+  --color-kind-package: var(--kind-package);
+  --color-kind-card: var(--kind-card);
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+}
+
+/*
+ * Vùng bấm tối thiểu 44px trên thiết bị cảm ứng — lễ tân thao tác nhanh
+ * trên tablet, nút nhỏ gây bấm nhầm.
+ */
+@media (pointer: coarse) {
+  button,
+  [role='button'],
+  a[href],
+  input[type='checkbox'],
+  input[type='radio'] {
+    min-height: 44px;
+  }
+}
+
+/* Số tiền và mã chứng từ nên dùng chữ số đều nhau để cột thẳng hàng */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
