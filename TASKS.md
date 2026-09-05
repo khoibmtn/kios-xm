@@ -64,19 +64,23 @@
 | Q6 | Lưu trữ tệp | **Google Drive 2 TB của anh Khôi**, qua OAuth `drive.file` (service account không dùng được — hạn mức 0 GB), sau lớp `StorageAdapter` |
 | Q7 | Mục tiêu chi phí | **0 đ** khi phát triển → **≈130.000 đ/tháng** khi vận hành thật |
 
-## ⏸ ĐANG CHỜ: anh Khôi duyệt thiết kế tổng thể
+## ✅ Thiết kế tổng thể — đã chốt hướng, đang thực thi
 
-**Không bắt đầu code cho tới khi mục này được đánh dấu xong.**
+Sáu điểm chờ duyệt trước đây đã được xử lý qua vòng **phản biện chéo**
+([`ADR-001`](./docs/decisions/ADR-001-design-revisions.md)) và anh Khôi đã tiếp tục cấp
+thông tin hạ tầng, tức đồng ý đi tiếp:
 
-Tài liệu cần duyệt: [`docs/architecture/02-system-design.md`](./docs/architecture/02-system-design.md)
+| # | Điểm | Kết luận |
+|---|---|---|
+| 1 | Bản đồ 12 phân hệ | Giữ nguyên, không thêm bớt |
+| 2 | Luồng E2/E3 | Giữ, sửa liên kết `booking_item ↔ invoice_item` và mốc ghi nhận |
+| 3 | Hoa hồng buổi trong gói | Theo **giá trị phân bổ**, phân bổ theo tỷ trọng giá bán lẻ |
+| 4 | Phân quyền | KTV không xem doanh thu toàn spa; lễ tân không xem giá vốn. Đã cài đặt trong `lib/auth/permissions.ts` |
+| 5 | Lộ trình | Chèn **M3.1 / M3.2** trước M4 để gỡ phụ thuộc ngược |
+| 6 | Hạ tầng | Supabase Free + Cloudflare Workers + Google Drive ([`ADR-002`](./docs/decisions/ADR-002-infrastructure.md)) |
 
-Sáu điểm cần anh xác nhận (chi tiết ở cuối tài liệu):
-1. Bản đồ 12 phân hệ — thiếu/thừa gì?
-2. Luồng bán hàng (E2) và luồng gói liệu trình (E3) có khớp thực tế vận hành không?
-3. Hoa hồng khi KTV làm buổi trong gói: tính theo **giá trị phân bổ của buổi**?
-4. Phân quyền: KTV có xem doanh thu toàn spa không? Lễ tân có xem giá vốn không?
-5. Thứ tự lộ trình M0–M9?
-6. Chốt Supabase hay giữ trung lập?
+> Anh Khôi vẫn nên đọc lại ADR-001 và ADR-002 khi có thời gian; nếu muốn đổi điều gì,
+> sửa càng sớm càng rẻ.
 
 ## Câu hỏi còn để ngỏ
 
