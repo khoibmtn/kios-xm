@@ -24,7 +24,7 @@
 | T-07 | Component `DataTable` dùng chung (TanStack Table): sidebar lọc + bảng + dòng tổng + phân trang + tuỳ chỉnh cột + xuất file | Claude | TODO | | Dùng lại được cho ≥2 module; mobile tự chuyển sang dạng thẻ |
 | T-08 | Chuẩn hoá tiền tệ/ngày giờ: `lib/format.ts` (VND, `vi-VN`, `Asia/Ho_Chi_Minh`) | Antigravity | TODO | | `formatMoney(1500000)` → `1.500.000`; test đơn vị |
 | T-09 | Deploy Cloudflare Workers + Supabase Free, biến môi trường, `.env.example` | Claude | TODO | | URL production mở được trang đăng nhập |
-| T-17 | `StorageAdapter` + `GoogleDriveAdapter` (OAuth `drive.file`, refresh token mã hoá) + bảng `files` | Claude | TODO | | Upload 1 ảnh lên Drive của anh Khôi, đọc lại qua endpoint có kiểm tra quyền |
+| T-17 | `StorageAdapter` + `GoogleDriveAdapter` (OAuth `drive.file`, refresh token mã hoá) + bảng `files` | Claude | DOING | Claude 05/09 | Upload 1 ảnh lên Drive của anh Khôi, đọc lại qua endpoint có kiểm tra quyền |
 | T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | DONE | Claude 05/09 | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
 | T-19 | `outbox_events` + worker gửi (Cron Trigger) | Claude | TODO | | Ghi sự kiện trong transaction, worker gửi sau commit, có retry, không gửi trùng |
 | T-20 | Cron sao lưu: `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản + ping chống pause | Claude | TODO | | Chạy 3 ngày liên tiếp có 3 file; khôi phục thử thành công |
