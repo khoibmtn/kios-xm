@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm"
 export const costingMethod = pgEnum("CostingMethod", ['average', 'fixed'])
 export const employeeStatus = pgEnum("EmployeeStatus", ['working', 'left'])
 export const gender = pgEnum("Gender", ['male', 'female', 'other'])
-export const outboxStatus = pgEnum("OutboxStatus", ['pending', 'sent', 'failed'])
+export const outboxStatus = pgEnum("OutboxStatus", ['pending', 'sent', 'failed', 'processing'])
 export const packageAllocationMode = pgEnum("PackageAllocationMode", ['proportional_retail', 'equal_per_session', 'custom'])
 
 

@@ -1,0 +1,42 @@
+name: Nhịp định kỳ
+
+# Chạy hộp thư đi (gửi tin nhắn nhắc lịch, cảm ơn, mời đánh giá) và đồng thời
+# giữ nhịp cho cơ sở dữ liệu — Supabase gói miễn phí tạm dừng project sau
+# 7 ngày không có hoạt động, mà spa nghỉ lễ dài là đủ để bị dừng.
+#
+# Đặt ở đây thay vì Cloudflare Cron Trigger vì OpenNext chưa lộ ra hàm
+# `scheduled` của Worker; khi nào lộ ra thì chuyển sang cho gọn.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # mỗi 15 phút
+  workflow_dispatch:
+
+concurrency:
+  group: cron-outbox
+  cancel-in-progress: true
+
+jobs:
+  outbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Gọi endpoint xử lý hộp thư đi
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          response=$(curl -sS -w '\n%{http_code}' -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 60 \
+            "$APP_URL/api/cron/outbox")
+
+          body=$(echo "$response" | head -n -1)
+          code=$(echo "$response" | tail -n 1)
+
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "::error::Endpoint trả về HTTP $code"
+            exit 1
+          fi

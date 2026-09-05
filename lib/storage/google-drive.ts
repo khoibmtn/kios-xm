@@ -256,6 +256,41 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Liệt kê tệp trong một thư mục, mới nhất trước.
+   * Dùng để dọn bản sao lưu quá hạn.
+   */
+  async list(
+    folderPath: string,
+  ): Promise<{ id: string; name: string; createdTime: string; size: number }[]> {
+    const root = await this.ensureRootFolder()
+    const segments = folderPath.split('/').filter(Boolean)
+
+    let parentId = root
+    for (const segment of segments) {
+      const found = await this.findChildFolder(segment, parentId)
+      if (!found) return [] // thư mục chưa tồn tại -> chưa có tệp nào
+      parentId = found
+    }
+
+    const q = `'${parentId}' in parents and trashed = false`
+    const res = await this.call(
+      `${API}/files?q=${encodeURIComponent(q)}` +
+        `&fields=files(id,name,createdTime,size)&orderBy=createdTime desc&pageSize=200`,
+    )
+    if (!res.ok) return []
+
+    const json = (await res.json()) as {
+      files: { id: string; name: string; createdTime: string; size?: string }[]
+    }
+    return json.files.map((f) => ({
+      id: f.id,
+      name: f.name,
+      createdTime: f.createdTime,
+      size: f.size ? Number(f.size) : 0,
+    }))
+  }
+
   async healthCheck(): Promise<{ ok: boolean; message?: string }> {
     try {
       const res = await this.call(`${API}/about?fields=user,storageQuota`)

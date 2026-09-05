@@ -164,6 +164,25 @@ lớn xử lý xuống trình duyệt. Làm được nhưng phức tạp hơn v�
 | **Tạm dừng sau 7 ngày không có truy vấn** | Spa hoạt động hằng ngày nên hiếm khi xảy ra — trừ nghỉ Tết dài | Cron ping mỗi ngày (ghi 1 dòng vào bảng `heartbeat`) |
 | Không có SLA | Chấp nhận được ở quy mô 1 spa | Khi cần cam kết → Supabase Pro 25 $ |
 
+### 3.6 ⚠️ Sửa kế hoạch cron: dùng GitHub Actions, không dùng Cloudflare Cron
+
+Kế hoạch ban đầu là chạy sao lưu bằng Cloudflare Cron Trigger. **Không khả thi**:
+`pg_dump` là chương trình nhị phân của Postgres, còn Workers chỉ chạy JavaScript.
+
+Việc chạy định kỳ chuyển sang **GitHub Actions**, miễn phí cho repo công khai và
+2.000 phút/tháng cho repo riêng tư:
+
+| Việc | Lịch | Cách chạy |
+|---|---|---|
+| Sao lưu cơ sở dữ liệu | 02:00 giờ Việt Nam hằng ngày | `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản |
+| Hộp thư đi + giữ nhịp CSDL | mỗi 15 phút | Gọi `POST /api/cron/outbox`, bảo vệ bằng `CRON_SECRET` |
+
+Lượt gọi mỗi 15 phút cũng chính là cách chống Supabase tạm dừng project sau 7 ngày
+không hoạt động — không cần cơ chế riêng.
+
+Khi nào OpenNext lộ ra hàm `scheduled` của Worker thì có thể chuyển phần hộp thư đi
+sang Cloudflare Cron cho gọn; phần sao lưu vẫn phải ở GitHub Actions vì cần `pg_dump`.
+
 ### 3.5 Chuỗi kết nối Supabase — còn thiếu mật khẩu
 
 Đã lấy được và ghi vào `.env.local`:

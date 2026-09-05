@@ -75,6 +75,8 @@ export const authConfig = {
       // Trang công khai
       if (pathname === '/' || pathname.startsWith('/login')) return true
       if (pathname.startsWith('/api/health')) return true
+      // Endpoint chạy định kỳ tự bảo vệ bằng CRON_SECRET, không dùng phiên đăng nhập
+      if (pathname.startsWith('/api/cron/')) return true
 
       // Còn lại bắt buộc đăng nhập
       return signedIn

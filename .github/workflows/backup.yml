@@ -1,0 +1,54 @@
+name: Sao lưu cơ sở dữ liệu
+
+# Supabase gói miễn phí không có bản sao lưu nào, nên đây là lớp bảo vệ duy
+# nhất cho sổ sách của spa. Chạy trên GitHub Actions vì pg_dump là chương
+# trình nhị phân, Cloudflare Workers không chạy được.
+
+on:
+  schedule:
+    # 19:00 UTC = 02:00 giờ Việt Nam — lúc spa đã đóng cửa
+    - cron: '0 19 * * *'
+  workflow_dispatch: # cho phép chạy tay khi cần
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cài Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Phiên bản pg_dump phải bằng hoặc mới hơn máy chủ, nếu không sẽ từ chối chạy
+      - name: Cài PostgreSQL client 17
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - run: npm ci
+
+      - name: Chạy sao lưu
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          BACKUP_RETENTION_DAYS: '30'
+        run: npx tsx scripts/backup.ts
+
+      - name: Báo khi thất bại
+        if: failure()
+        run: |
+          echo "::error::Sao lưu thất bại. Kiểm tra kết nối Google Drive (token có thể đã hết hạn) và chuỗi kết nối cơ sở dữ liệu."
