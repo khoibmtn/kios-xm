@@ -11,7 +11,7 @@
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
 | Ứng dụng đã deploy | Chưa (chạy được ở máy: `npm run dev`) |
 | Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
-| Số task DONE | 4 / 21 (M0+M1) — T-01, T-03, T-04, T-18 |
+| Số task DONE | 5 / 21 (M0+M1) — T-01, T-03, T-04, T-17, T-18 |
 
 ## Nhật ký
 
@@ -26,6 +26,7 @@
 | 2026-09-05 | Claude Code | Cấu hình xong Google Cloud (scope `drive.file`, redirect URI, 2 test users) và lấy chuỗi kết nối Supabase (Tokyo). Publish OAuth app còn vướng vì chưa có tên miền | `ADR-002 §2.6, §3.5`, `.env.local` |
 | 2026-09-05 | Claude Code | **T-01 + T-03 xong**: Next.js 16 + Tailwind 4 + font Be Vietnam Pro, Prisma 7 + Supabase (13 bảng), 43 quyền chi tiết + 5 vai trò, seed spa/chi nhánh/chủ. `npm run build` sạch, `/api/health` báo DB ok | `app/`, `lib/`, `prisma/`, `package.json` |
 | 2026-09-05 | Claude Code | **T-04 + T-18 xong**: Auth.js v5 (JWT 12h, session mang tenant/branch/quyền), trang đăng nhập, chặn route, trang 403, `audit_log` service. Kiểm chứng thật: lễ tân chỉ 14/43 quyền, thấy cảnh báo y tế nhưng không mở được chẩn đoán | `auth.ts`, `auth.config.ts`, `proxy.ts`, `app/login/`, `app/admin/`, `lib/auth/`, `lib/audit.ts` |
+| 2026-09-05 | Claude Code | **T-17 xong**: kết nối Google Drive thật (tài khoản Xumây Hương, còn ~1.790 GB). Kiểm chứng đầu-cuối: tải ảnh lên → ghi bảng `files` → đọc lại khớp từng byte → xoá sạch | `lib/storage/`, `lib/crypto.ts`, `app/api/drive/`, `scripts/check-storage.ts` |
 
 ## Sự cố / bài học
 
