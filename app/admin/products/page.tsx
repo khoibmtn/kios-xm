@@ -1,4 +1,5 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import Link from 'next/link'
+import { asc, eq, sql } from 'drizzle-orm'
 import { requirePermission, can } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { brands, categories, inventory, products, units } from '@/lib/schema'
@@ -56,7 +57,11 @@ export default async function ProductsPage() {
         </p>
       </div>
 
-      <ProductTable rows={rows as ProductRow[]} showCost={showCost} />
+      <ProductTable
+        rows={rows as ProductRow[]}
+        showCost={showCost}
+        canManage={can(user, 'product.manage')}
+      />
     </div>
   )
 }

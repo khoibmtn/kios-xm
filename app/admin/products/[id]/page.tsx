@@ -123,11 +123,21 @@ export default async function ProductDetailPage({ params }: PageProps<'/admin/pr
           <Badge tone={KIND_TONE[kind]}>{KIND_LABEL[kind]}</Badge>
           {!product.isActive && <Badge>Ngừng bán</Badge>}
         </div>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {product.code}
-          {product.categoryName && <> · {product.categoryName}</>}
-          {product.brandName && <> · {product.brandName}</>}
-        </p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-muted-foreground text-sm">
+            {product.code}
+            {product.categoryName && <> · {product.categoryName}</>}
+            {product.brandName && <> · {product.brandName}</>}
+          </p>
+          {can(user, 'product.manage') && (
+            <Link
+              href={`/admin/products/${id}/edit`}
+              className="border-border hover:bg-muted rounded-md border px-4 py-2 text-sm font-medium"
+            >
+              Sửa
+            </Link>
+          )}
+        </div>
       </div>
 
       <section className="border-border bg-card rounded-lg border p-5">

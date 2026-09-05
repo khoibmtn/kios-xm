@@ -19,6 +19,7 @@ dist/
 coverage/
 .turbo/
 next-env.d.ts
+*.tsbuildinfo
 # (đã gỡ Prisma)
 
 # Thư mục build của OpenNext — CHỨA BIẾN MÔI TRƯỜNG, tuyệt đối không commit

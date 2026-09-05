@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, type PaginationState } from '@/components/data-table/data-table'
 import { Badge, CheckboxFilter, FilterGroup, RadioFilter, SelectFilter } from '@/components/data-table/filters'
@@ -32,7 +34,15 @@ export interface ProductRow {
 
 type StockFilter = 'all' | 'low' | 'out'
 
-export function ProductTable({ rows, showCost }: { rows: ProductRow[]; showCost: boolean }) {
+export function ProductTable({
+  rows,
+  showCost,
+  canManage,
+}: {
+  rows: ProductRow[]
+  showCost: boolean
+  canManage: boolean
+}) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [kinds, setKinds] = useState<ProductKind[]>([])
@@ -224,6 +234,17 @@ export function ProductTable({ rows, showCost }: { rows: ProductRow[]; showCost:
       onPaginationChange={setPagination}
       storageKey="products"
       onRowClick={(r) => router.push(`/admin/products/${r.id}`)}
+      actions={
+        canManage ? (
+          <Link
+            href="/admin/products/new"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium"
+          >
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">Thêm hàng hoá</span>
+          </Link>
+        ) : undefined
+      }
       search={{
         value: search,
         onChange: (v) => {
