@@ -9,6 +9,7 @@ import type { Permission } from '@/lib/auth/permissions'
  */
 const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: '/admin', label: 'Tổng quan', permission: 'product.view' },
+  { href: '/admin/products', label: 'Hàng hoá', permission: 'product.view' },
   { href: '/admin/employees', label: 'Nhân viên', permission: 'employee.view' },
   { href: '/admin/audit', label: 'Nhật ký', permission: 'settings.view_audit' },
   { href: '/admin/settings/storage', label: 'Lưu trữ', permission: 'settings.manage' },

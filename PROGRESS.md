@@ -7,11 +7,11 @@
 
 | Mục | Giá trị |
 |---|---|
-| Milestone đang làm | **M0 — Nền móng** — xong phần của Claude, còn 4 task giao diện của Antigravity |
+| Milestone đang làm | **M1 — Danh mục** (M0 xong phần Claude, còn 4 task giao diện của Antigravity) |
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
 | Ứng dụng đã deploy | **Có, chạy đầy đủ** — https://kios-xm.spa-xumay.workers.dev |
-| Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
-| Số task DONE | 10 / 21 (M0+M1) — T-01, T-03, T-04, T-07, T-08, T-09, T-17, T-18, T-19, T-20 |
+| Schema DB | **24 bảng trên Supabase** — M0 (13) + danh mục M1 (10), đã seed dữ liệu mẫu |
+| Số task DONE | 12 / 21 (M0+M1) — thêm T-10, T-11 |
 
 ## Nhật ký
 
@@ -31,6 +31,7 @@
 | 2026-09-05 | Claude Code | **T-07 + T-08 xong**: `DataTable` dùng chung (lọc, sắp xếp, tuỳ chỉnh cột, xuất CSV cho Excel VN, phân trang, tự chuyển dạng thẻ trên điện thoại) + `lib/format.ts`. Kiểm chứng bằng **2 màn hình thật** trên production: Nhân viên và Nhật ký thao tác | `components/data-table/`, `lib/format.ts`, `app/admin/employees/`, `app/admin/audit/` |
 | 2026-09-05 | Claude Code | **T-19 xong, T-20 chờ secrets**: hộp thư đi có trạng thái `processing` chống mất việc khi tiến trình chết, `FOR UPDATE SKIP LOCKED` chống gửi trùng, thử lại tối đa 5 lần. Kiểm chứng production: 3 việc → 2 gửi, 1 hỏng; chạy lại claimed=0. Sao lưu chuyển sang GitHub Actions vì `pg_dump` không chạy trên Workers | `lib/outbox.ts`, `app/api/cron/outbox/`, `scripts/backup.ts`, `.github/workflows/` |
 | 2026-09-05 | Claude Code | **T-20 xong**: sao lưu tự động lên Drive 02:00 hằng ngày, giữ 30 bản, **kèm khôi phục thử vào Postgres trống mỗi lượt chạy** — đối chiếu số bản ghi khớp 5/5 bảng. Cron 15 phút chạy hộp thư đi và giữ nhịp chống Supabase tạm dừng. Đã nạp 6 GitHub secrets | `.github/workflows/`, `scripts/backup.ts`, `scripts/verify-backup.ts` |
+| 2026-09-05 | Claude Code | **T-10 + T-11 xong**: lược đồ danh mục 4 loại hàng hoá với **14 ràng buộc cấp CSDL** (dịch vụ buộc có thời lượng, thẻ buộc có mệnh giá, gói chỉ chứa dịch vụ, định mức chỉ tiêu hao sản phẩm…) — kiểm chứng 14/14 chặn đúng. Seed 14 hàng hoá theo dữ liệu thật. Trang Hàng hoá chạy trên production, giá vốn bị cắt từ truy vấn với người không có quyền | `lib/schema/catalog.ts`, `drizzle/0003_catalog.sql`, `app/admin/products/`, `scripts/seed-catalog.ts`, `scripts/check-catalog-rules.ts` |
 
 ## Sự cố / bài học
 

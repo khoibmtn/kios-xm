@@ -329,3 +329,6 @@ export const tenantFeatures = pgTable("tenant_features", {
 		}).onUpdate("cascade").onDelete("cascade"),
 	primaryKey({ columns: [table.tenantId, table.featureKey], name: "tenant_features_pkey"}),
 ]);
+
+// Danh mục hàng hoá — tách file riêng cho dễ đọc
+export * from './catalog'
