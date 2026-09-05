@@ -49,12 +49,31 @@
 - **M9 Đặt lịch online** — trang public `/[tenantSlug]` + QR
 - **M10 Phòng khám** — phiếu khám, thông tin y tế, album trước/sau
 
-## Câu hỏi đang chờ anh Khôi quyết
+## Quyết định đã chốt (05/09/2026)
+
+| # | Câu hỏi | Quyết định |
+|---|---|---|
+| Q1 | Phạm vi sản phẩm | **1 spa trước, chừa đường mở rộng** — DB có sẵn `tenant_id`, chưa làm UI quản lý tenant |
+| Q2 | Module Phòng khám | **Cần, ưu tiên sớm** → chuyển từ M10 lên **M4** |
+| Q4 | Hạ tầng DB | **Chốt sau**, sau khi cân nhắc chi phí khi scale. Tầng dữ liệu viết trung lập (Prisma + SQL thuần), xem `docs/architecture/02-system-design.md` Phần J |
+
+## ⏸ ĐANG CHỜ: anh Khôi duyệt thiết kế tổng thể
+
+**Không bắt đầu code cho tới khi mục này được đánh dấu xong.**
+
+Tài liệu cần duyệt: [`docs/architecture/02-system-design.md`](./docs/architecture/02-system-design.md)
+
+Sáu điểm cần anh xác nhận (chi tiết ở cuối tài liệu):
+1. Bản đồ 12 phân hệ — thiếu/thừa gì?
+2. Luồng bán hàng (E2) và luồng gói liệu trình (E3) có khớp thực tế vận hành không?
+3. Hoa hồng khi KTV làm buổi trong gói: tính theo **giá trị phân bổ của buổi**?
+4. Phân quyền: KTV có xem doanh thu toàn spa không? Lễ tân có xem giá vốn không?
+5. Thứ tự lộ trình M0–M9?
+6. Chốt Supabase hay giữ trung lập?
+
+## Câu hỏi còn để ngỏ
 
 | # | Câu hỏi | Ảnh hưởng |
 |---|---|---|
-| Q1 | Chỉ dùng cho 1 spa của anh, hay bán cho nhiều spa (SaaS)? | Quyết định độ sâu multi-tenant |
-| Q2 | Có cần module **Phòng khám** (phiếu khám, tiền sử, dị ứng) ngay từ đầu không? | Đưa M10 lên sớm hay để cuối |
-| Q3 | Có cần hoá đơn điện tử + tờ khai thuế HKD không? | Khối lượng rất lớn, nên tách giai đoạn 2 |
-| Q4 | Nhà cung cấp DB: Neon hay Supabase? | Supabase có sẵn auth + storage + realtime |
-| Q5 | Có cần chạy được khi mất mạng (offline POS) không? | Ảnh hưởng kiến trúc rất lớn |
+| Q3 | Có cần hoá đơn điện tử + tờ khai thuế HKD không? | Khối lượng rất lớn, đề xuất tách giai đoạn 2 |
+| Q5 | Có cần POS chạy khi mất mạng không? | Ảnh hưởng kiến trúc rất lớn, đề xuất KHÔNG làm ở v1 |
