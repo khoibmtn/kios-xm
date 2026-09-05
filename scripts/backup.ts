@@ -62,15 +62,30 @@ async function main() {
     .where(eq(s.tenantSettings.tenantId, tenant.id))
     .limit(1)
 
-  if (!settings?.driveRefreshToken) {
-    throw new Error('Chưa kết nối Google Drive — không có nơi cất bản sao lưu')
+  /*
+   * Hai đường lấy refresh token, cố ý ưu tiên biến môi trường.
+   *
+   * Nếu bắt kịch bản này tự giải mã token trong cơ sở dữ liệu thì phải đưa
+   * ENCRYPTION_KEY lên GitHub — mà khoá đó mở được MỌI dữ liệu nhạy cảm đã mã
+   * hoá. Đưa riêng một refresh token của Drive lên thì phạm vi thiệt hại nhỏ
+   * hơn hẳn nếu lộ, và thu hồi cũng dễ (chỉ cần bấm kết nối lại).
+   */
+  let refreshToken = process.env.GOOGLE_REFRESH_TOKEN
+  if (!refreshToken) {
+    if (!settings?.driveRefreshToken) {
+      throw new Error('Chưa kết nối Google Drive — không có nơi cất bản sao lưu')
+    }
+    console.log('   → dùng token trong cơ sở dữ liệu (cần ENCRYPTION_KEY)')
+    refreshToken = await decryptSecret(settings.driveRefreshToken)
+  } else {
+    console.log('   → dùng token từ biến môi trường')
   }
 
   const drive = new GoogleDriveAdapter({
     clientId: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    refreshToken: await decryptSecret(settings.driveRefreshToken),
-    rootFolderId: settings.driveRootFolderId ?? undefined,
+    refreshToken,
+    rootFolderId: settings?.driveRootFolderId ?? undefined,
   })
 
   const now = new Date()
