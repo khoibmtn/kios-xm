@@ -89,6 +89,42 @@ async function main() {
   })
   console.log('  ✓ Nhân viên: NV000001')
 
+  // Tài khoản lễ tân — dùng để kiểm chứng phân quyền thật sự có tác dụng
+  const reception = await db.user.upsert({
+    where: { tenantId_email: { tenantId: tenant.id, email: 'letan@spa.local' } },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      email: 'letan@spa.local',
+      fullName: 'Lễ tân demo',
+      passwordHash: await bcrypt.hash(SEED_PASSWORD, 10),
+    },
+  })
+  await db.userBranchRole.upsert({
+    where: {
+      userId_branchId_roleId: {
+        userId: reception.id,
+        branchId: branch.id,
+        roleId: roles.receptionist,
+      },
+    },
+    update: {},
+    create: { userId: reception.id, branchId: branch.id, roleId: roles.receptionist },
+  })
+  await db.employee.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'NV000002' } },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      userId: reception.id,
+      code: 'NV000002',
+      fullName: 'Lễ tân demo',
+      workBranchId: branch.id,
+      payBranchId: branch.id,
+    },
+  })
+  console.log('  ✓ Tài khoản lễ tân: letan@spa.local (để thử phân quyền)')
+
   // Cấu hình mặc định
   await db.tenantSettings.upsert({
     where: { tenantId: tenant.id },

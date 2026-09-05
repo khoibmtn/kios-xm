@@ -18,14 +18,14 @@
 | T-01 | Khởi tạo Next.js + TypeScript + Tailwind + ESLint/Prettier | Claude | DONE | Claude 05/09 | `pnpm dev` chạy; Tailwind áp dụng được; `pnpm build` sạch |
 | T-02 | Cài shadcn/ui, thiết lập design token (màu, spacing, font Inter/Be Vietnam Pro) | Antigravity | TODO | | Có `Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`; hiển thị đúng tiếng Việt có dấu |
 | T-03 | Prisma + Supabase Postgres, schema M0: tenants, branches, users, roles, user_branch_roles, tenant_features, tenant_settings, files, outbox_events, audit_log | Claude | DONE | Claude 05/09 | `prisma migrate dev` chạy; seed 1 tenant + 1 chi nhánh + 1 owner |
-| T-04 | Auth.js: đăng nhập email/mật khẩu, session mang `tenantId` + `branchId` | Claude | DOING | Claude 05/09 | Đăng nhập/đăng xuất; route `(admin)` chặn khi chưa đăng nhập |
+| T-04 | Auth.js: đăng nhập email/mật khẩu, session mang `tenantId` + `branchId` | Claude | DONE | Claude 05/09 | Đăng nhập/đăng xuất; route `(admin)` chặn khi chưa đăng nhập |
 | T-05 | Layout Quản trị: topbar + sidebar theo cây menu trong `docs/research/01-module-map.md` | Antigravity | TODO | | Đủ nhóm menu; thu gọn được; mobile có drawer; active state đúng |
 | T-06 | Layout POS: header 2 tab (Lịch hẹn / Bán hàng), không sidebar | Antigravity | TODO | | Chạy tốt ở 1024×768 ngang và 375px |
 | T-07 | Component `DataTable` dùng chung (TanStack Table): sidebar lọc + bảng + dòng tổng + phân trang + tuỳ chỉnh cột + xuất file | Claude | TODO | | Dùng lại được cho ≥2 module; mobile tự chuyển sang dạng thẻ |
 | T-08 | Chuẩn hoá tiền tệ/ngày giờ: `lib/format.ts` (VND, `vi-VN`, `Asia/Ho_Chi_Minh`) | Antigravity | TODO | | `formatMoney(1500000)` → `1.500.000`; test đơn vị |
 | T-09 | Deploy Cloudflare Workers + Supabase Free, biến môi trường, `.env.example` | Claude | TODO | | URL production mở được trang đăng nhập |
 | T-17 | `StorageAdapter` + `GoogleDriveAdapter` (OAuth `drive.file`, refresh token mã hoá) + bảng `files` | Claude | TODO | | Upload 1 ảnh lên Drive của anh Khôi, đọc lại qua endpoint có kiểm tra quyền |
-| T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | DOING | Claude 05/09 | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
+| T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | DONE | Claude 05/09 | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
 | T-19 | `outbox_events` + worker gửi (Cron Trigger) | Claude | TODO | | Ghi sự kiện trong transaction, worker gửi sau commit, có retry, không gửi trùng |
 | T-20 | Cron sao lưu: `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản + ping chống pause | Claude | TODO | | Chạy 3 ngày liên tiếp có 3 file; khôi phục thử thành công |
 | T-21 | `tenant_settings` + `tenant_features` (slot 15/30/60, buffer, chế độ phân bổ gói, khoá sổ) | Antigravity | TODO | | Đổi slot sang 15 phút thì lịch hẹn hiển thị đúng |

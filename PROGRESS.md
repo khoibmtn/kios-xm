@@ -11,7 +11,7 @@
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
 | Ứng dụng đã deploy | Chưa (chạy được ở máy: `npm run dev`) |
 | Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
-| Số task DONE | 2 / 21 (M0+M1) — T-01, T-03 |
+| Số task DONE | 4 / 21 (M0+M1) — T-01, T-03, T-04, T-18 |
 
 ## Nhật ký
 
@@ -25,6 +25,7 @@
 | 2026-09-05 | Claude Code | Nhận thông tin OAuth + Drive từ anh Khôi. Chặn `client_secret*.json` khỏi git, tạo `env.example` và `.env.local` (chmod 600). Phát hiện `drive.file` không ghi được vào thư mục có sẵn → ứng dụng sẽ tự tạo thư mục gốc | `.gitignore`, `env.example`, `ADR-002 §2.2` |
 | 2026-09-05 | Claude Code | Cấu hình xong Google Cloud (scope `drive.file`, redirect URI, 2 test users) và lấy chuỗi kết nối Supabase (Tokyo). Publish OAuth app còn vướng vì chưa có tên miền | `ADR-002 §2.6, §3.5`, `.env.local` |
 | 2026-09-05 | Claude Code | **T-01 + T-03 xong**: Next.js 16 + Tailwind 4 + font Be Vietnam Pro, Prisma 7 + Supabase (13 bảng), 43 quyền chi tiết + 5 vai trò, seed spa/chi nhánh/chủ. `npm run build` sạch, `/api/health` báo DB ok | `app/`, `lib/`, `prisma/`, `package.json` |
+| 2026-09-05 | Claude Code | **T-04 + T-18 xong**: Auth.js v5 (JWT 12h, session mang tenant/branch/quyền), trang đăng nhập, chặn route, trang 403, `audit_log` service. Kiểm chứng thật: lễ tân chỉ 14/43 quyền, thấy cảnh báo y tế nhưng không mở được chẩn đoán | `auth.ts`, `auth.config.ts`, `proxy.ts`, `app/login/`, `app/admin/`, `lib/auth/`, `lib/audit.ts` |
 
 ## Sự cố / bài học
 
@@ -35,6 +36,8 @@
 | 2026-09-05 | **Bài học thiết kế:** bản thiết kế v1 có 3 lỗi kiến trúc chỉ lộ ra khi bị phản biện chéo — (1) tự mâu thuẫn giữa phần văn xuôi và data model về `employees` vs `users`; (2) lặp 5 trường ở cả `booking_items` lẫn `invoice_items` tạo hai nguồn sự thật; (3) công thức phân bổ giá gói chỉ đúng với gói một dịch vụ. ⇒ Sau này mỗi khi viết văn xuôi khẳng định một nguyên tắc, phải **kiểm tra lại data model có tuân đúng không**. |
 | 2026-09-05 | **Yêu cầu phi chức năng phải đối chiếu gói dịch vụ thật.** Tôi viết "sao lưu 30 ngày + khôi phục theo thời điểm" mà không kiểm tra: Supabase Free **không có backup**, Pro chỉ giữ 7 ngày, PITR là tính năng trả thêm tiền. |
 | 2026-09-05 | **Vercel Hobby cấm dùng thương mại** — suýt chọn nhầm hạ tầng vi phạm điều khoản. **Google Drive service account có hạn mức 0 GB** từ 2023 — phải dùng OAuth tài khoản thật. Cả hai đều không tự lộ ra nếu không tra cứu. |
+
+| 2026-09-05 | **Auth.js v5 tự host**: mặc định chỉ tin Host header khi chạy trên Vercel; tự host phải đặt `trustHost: true`, nếu không mọi request đều `UntrustedHost`. **Next 16** đã đổi quy ước `middleware.ts` → `proxy.ts`. **Module augmentation của next-auth** không ăn với `AdapterUser`/`JWT` trong bản beta hiện tại — phải khai kiểu tường minh rồi ép kiểu trong callback. |
 
 ## Ghi chú kỹ thuật cần nhớ
 
