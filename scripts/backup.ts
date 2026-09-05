@@ -84,7 +84,9 @@ async function main() {
    * hoá. Đưa riêng một refresh token của Drive lên thì phạm vi thiệt hại nhỏ
    * hơn hẳn nếu lộ, và thu hồi cũng dễ (chỉ cần bấm kết nối lại).
    */
-  let refreshToken = process.env.GOOGLE_REFRESH_TOKEN
+  // Dùng `||` chứ không phải `??`: env.example để sẵn GOOGLE_REFRESH_TOKEN="",
+  // mà `??` chỉ bắt null/undefined nên chuỗi rỗng sẽ lọt qua và gây lỗi xác thực.
+  let refreshToken = process.env.GOOGLE_REFRESH_TOKEN || ''
   if (!refreshToken) {
     if (!settings?.driveRefreshToken) {
       throw new Error('Chưa kết nối Google Drive — không có nơi cất bản sao lưu')

@@ -19,6 +19,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # Một bản sao lưu chưa từng thử khôi phục thì chưa phải bản sao lưu.
+    # Dựng sẵn một Postgres trống để nạp lại bản vừa tạo ngay trong cùng lượt chạy.
+    services:
+      verify:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: verify
+          POSTGRES_DB: verify
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5433:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +72,15 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           BACKUP_RETENTION_DAYS: '30'
         run: npx tsx scripts/backup.ts
+
+      - name: Khôi phục thử bản vừa tạo
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          VERIFY_URL: postgresql://postgres:verify@localhost:5433/verify
+        run: npx tsx scripts/verify-backup.ts
 
       - name: Báo khi thất bại
         if: failure()
