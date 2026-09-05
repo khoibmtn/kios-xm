@@ -37,7 +37,8 @@ async function main() {
   let dump: Buffer
   try {
     const { stdout } = await run(
-      'pg_dump',
+      // Cho phép chỉ định đường dẫn khi trên máy có nhiều bản Postgres
+      process.env.PG_DUMP ?? 'pg_dump',
       [connectionString, '--no-owner', '--no-acl', '--format=plain'],
       { maxBuffer: 512 * 1024 * 1024, encoding: 'buffer' } as never,
     )
