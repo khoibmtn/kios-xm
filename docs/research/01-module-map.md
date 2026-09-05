@@ -97,6 +97,30 @@ Trên POS, thanh lọc có đúng 4 tab. Đây là 4 loại bản ghi khác nhau
 9. **Trừ buổi tự động** từ gói/liệu trình và **trừ tiền** từ thẻ tài khoản.
 10. **Multi-cart**: nhiều hoá đơn mở song song (Hoá đơn 1, 2, 3…) — phục vụ nhiều khách cùng lúc.
 
+## 4b. Luồng khởi tạo (onboarding) — 6 bước
+
+App hiển thị widget "Khởi tạo — Bạn đã hoàn thành 4/6 bước". Playlist hướng dẫn chính thức
+(`KiotViet Salon - HDSD Làm quen Giao diện Phần mềm`, 6 video) cho biết đúng 6 bước:
+
+1. **Khởi tạo dữ liệu** — nhóm hàng, hàng hoá, vị trí/phòng
+2. **Quản lý nhân viên** — nhân viên, ca, lương, hoa hồng
+3. **Sắp xếp lịch hẹn** — lịch làm việc + đặt lịch
+4. **Tư vấn bán hàng** — POS
+5. **Quản lý tài chính** — sổ quỹ, báo cáo
+6. **App KiotViet Salon** — ứng dụng di động
+
+⇒ kios-xm nên có **checklist khởi tạo** tương tự trên dashboard: giảm rất nhiều ma sát
+khi spa mới bắt đầu dùng.
+
+## 4c. Ứng dụng di động
+
+KiotViet Salon có app riêng; theo trang giới thiệu, nhân viên "xem thu nhập tạm tính
+ngay trên điện thoại", chủ spa xem báo cáo, và có app khách hàng (Hi Kiot) để đặt lịch.
+
+⇒ Với kios-xm: làm **PWA responsive** thay vì app native — rẻ hơn nhiều, đủ dùng.
+Ba màn hình di động ưu tiên: (1) lịch hẹn của tôi + check-in cho KTV,
+(2) thu nhập/hoa hồng tạm tính của KTV, (3) dashboard doanh thu cho chủ.
+
 ## 5. Ghi chú vận hành khi khảo sát
 
 - Tài khoản khảo sát: 196 hàng hoá (199 mã), 81 khách hàng, 1 nhân viên, 1 chi nhánh

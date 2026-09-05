@@ -19,6 +19,7 @@
 |---|---|---|---|
 | 2026-09-05 | Claude Code | Khảo sát trực tiếp KiotViet Salon (tài khoản thật): bản đồ 40+ màn hình, schema API sản phẩm/khách hàng, luồng POS & lịch hẹn, toàn bộ trang Thiết lập | `docs/research/01-module-map.md`, `02-data-model.md`, `03-ux-flows.md`, `04-business-rules.md` |
 | 2026-09-05 | Claude Code | Thiết lập context dùng chung cho 2 agent + kiến trúc + lộ trình M0–M10 | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `TASKS.md`, `PROGRESS.md`, `docs/architecture/01-overview.md` |
+| 2026-09-05 | Claude Code | Khảo sát sâu đợt 2: 4 form tạo hàng hoá, lương/chấm công/bảng lương, nhập hàng & kiểm kho, khuôn mẫu báo cáo, giải phẫu hoá đơn thật (HD000586) | `docs/research/05-product-forms.md`, `06-employees-inventory-reports.md`, `07-invoice-anatomy.md` |
 
 ## Sự cố / bài học
 
@@ -33,3 +34,8 @@
 - Bốn loại hàng hoá là trục thiết kế xuyên suốt: `product` · `service` · `package` · `card`.
 - Mỗi dòng dịch vụ có **2 vai trò hoa hồng**: `performer` (làm) và `consultant` (tư vấn).
 - Ràng buộc chống trùng lịch nên đặt ở tầng Postgres (`EXCLUDE USING gist`), không ở app.
+- Thực ra có **3** vai trò hoa hồng, không phải 2: `Thực hiện dịch vụ` · `Tư vấn bán hàng`
+  · `Thu ngân` (xác nhận qua bộ chỉ tiêu của Báo cáo nhân viên).
+- Thanh toán hoá đơn **luôn sinh phiếu thu trong sổ quỹ** (mã `TT` + mã hoá đơn).
+- Chứng từ kho theo mẫu **phiếu tạm → hoàn tất**; chỉ khi hoàn tất mới ghi `stock_moves`.
+- Hoá đơn tổng tiền `0` là hợp lệ (dùng buổi từ gói / trả bằng thẻ) — không được coi là lỗi.
