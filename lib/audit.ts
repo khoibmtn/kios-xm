@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@/lib/generated/prisma/client'
 
 /**
  * Nhật ký thao tác.

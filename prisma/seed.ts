@@ -2,7 +2,7 @@ import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local', override: true })
 
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../lib/generated/prisma/client'
 import bcrypt from 'bcryptjs'
 import { SYSTEM_ROLES } from '../lib/auth/permissions'
 

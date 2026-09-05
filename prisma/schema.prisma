@@ -3,7 +3,13 @@
 // Bám 7 quy tắc bắt buộc trong AGENTS.md §3b và ADR-001.
 
 generator client {
-  provider = "prisma-client-js"
+  // Generator mới của Prisma 7: sinh mã theo runtime đích.
+  // "workerd" chọn loader nạp WASM bằng import tĩnh — Cloudflare cấm biên dịch
+  // WASM lúc chạy, nên loader mặc định sẽ hỏng trên production.
+  provider     = "prisma-client"
+  output       = "../lib/generated/prisma"
+  runtime      = "workerd"
+  moduleFormat = "esm"
 }
 
 datasource db {

@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kios-xm",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-05",
+  // nodejs_compat: Prisma và driver pg cần API của Node (buffer, sockets…).
+  // global_fetch_strictly_public: fetch nội bộ đi ra Internet như trình duyệt,
+  // tránh vòng lặp gọi ngược chính Worker.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Biến bí mật (DATABASE_URL, AUTH_SECRET, GOOGLE_*, ENCRYPTION_KEY)
+  // KHÔNG khai ở đây — nạp bằng `wrangler secret put` để không lọt vào git.
+  "vars": {
+    "NODE_ENV": "production"
+  }
+}

@@ -9,7 +9,7 @@
 |---|---|
 | Milestone đang làm | **M0 — Nền móng** (đang code) |
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
-| Ứng dụng đã deploy | Chưa (chạy được ở máy: `npm run dev`) |
+| Ứng dụng đã deploy | **Có** — https://kios-xm.spa-xumay.workers.dev (⚠ tầng dữ liệu chưa chạy, xem Sự cố) |
 | Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
 | Số task DONE | 5 / 21 (M0+M1) — T-01, T-03, T-04, T-17, T-18 |
 
@@ -39,6 +39,8 @@
 | 2026-09-05 | **Vercel Hobby cấm dùng thương mại** — suýt chọn nhầm hạ tầng vi phạm điều khoản. **Google Drive service account có hạn mức 0 GB** từ 2023 — phải dùng OAuth tài khoản thật. Cả hai đều không tự lộ ra nếu không tra cứu. |
 
 | 2026-09-05 | **Auth.js v5 tự host**: mặc định chỉ tin Host header khi chạy trên Vercel; tự host phải đặt `trustHost: true`, nếu không mọi request đều `UntrustedHost`. **Next 16** đã đổi quy ước `middleware.ts` → `proxy.ts`. **Module augmentation của next-auth** không ăn với `AdapterUser`/`JWT` trong bản beta hiện tại — phải khai kiểu tường minh rồi ép kiểu trong callback. |
+
+| 2026-09-05 | **Prisma 7 chưa chạy được trên Cloudflare Workers.** Client sinh ra biên dịch WASM lúc chạy, mà Workers cấm (`Wasm code generation disallowed by embedder`). Đã thử generator `prisma-client` với `runtime="workerd"` + `moduleFormat="esm"` — vẫn lỗi, vì OpenNext nhúng WASM dạng base64 khi đóng gói nên không còn là import tĩnh. Đây là bug đã biết của Prisma (issue 28657), chưa có bản vá. Ứng dụng **đã deploy và phục vụ được** ở `kios-xm.spa-xumay.workers.dev`; chỉ phần truy vấn cơ sở dữ liệu là hỏng. |
 
 ## Ghi chú kỹ thuật cần nhớ
 
