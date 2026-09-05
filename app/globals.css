@@ -94,3 +94,11 @@
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Thanh cuộn ngang trong header trên điện thoại — ẩn cho gọn */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

@@ -11,7 +11,7 @@
 | Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
 | Ứng dụng đã deploy | **Có, chạy đầy đủ** — https://kios-xm.spa-xumay.workers.dev |
 | Schema DB | **Đã migrate lên Supabase** — 13 bảng M0, đã seed |
-| Số task DONE | 6 / 21 (M0+M1) — T-01, T-03, T-04, T-09, T-17, T-18 |
+| Số task DONE | 8 / 21 (M0+M1) — T-01, T-03, T-04, T-07, T-08, T-09, T-17, T-18 |
 
 ## Nhật ký
 
@@ -28,6 +28,7 @@
 | 2026-09-05 | Claude Code | **T-04 + T-18 xong**: Auth.js v5 (JWT 12h, session mang tenant/branch/quyền), trang đăng nhập, chặn route, trang 403, `audit_log` service. Kiểm chứng thật: lễ tân chỉ 14/43 quyền, thấy cảnh báo y tế nhưng không mở được chẩn đoán | `auth.ts`, `auth.config.ts`, `proxy.ts`, `app/login/`, `app/admin/`, `lib/auth/`, `lib/audit.ts` |
 | 2026-09-05 | Claude Code | **T-17 xong**: kết nối Google Drive thật (tài khoản Xumây Hương, còn ~1.790 GB). Kiểm chứng đầu-cuối: tải ảnh lên → ghi bảng `files` → đọc lại khớp từng byte → xoá sạch | `lib/storage/`, `lib/crypto.ts`, `app/api/drive/`, `scripts/check-storage.ts` |
 | 2026-09-05 | Claude Code | **T-09 xong**: deploy Cloudflare Workers thành công. Gặp bug Prisma 7 + WASM → **đổi ORM sang Drizzle** (ADR-003), lược đồ đọc ngược từ CSDL đang chạy nên không mất dữ liệu. Production kiểm chứng: đăng nhập + phân quyền 14/43 của lễ tân đều đúng | `lib/schema/`, `lib/db.ts`, `auth.ts`, `scripts/seed.ts`, `wrangler.jsonc`, `ADR-003` |
+| 2026-09-05 | Claude Code | **T-07 + T-08 xong**: `DataTable` dùng chung (lọc, sắp xếp, tuỳ chỉnh cột, xuất CSV cho Excel VN, phân trang, tự chuyển dạng thẻ trên điện thoại) + `lib/format.ts`. Kiểm chứng bằng **2 màn hình thật** trên production: Nhân viên và Nhật ký thao tác | `components/data-table/`, `lib/format.ts`, `app/admin/employees/`, `app/admin/audit/` |
 
 ## Sự cố / bài học
 
@@ -44,6 +45,8 @@
 | 2026-09-05 | **Prisma 7 chưa chạy được trên Cloudflare Workers.** Client sinh ra biên dịch WASM lúc chạy, mà Workers cấm (`Wasm code generation disallowed by embedder`). Đã thử generator `prisma-client` với `runtime="workerd"` + `moduleFormat="esm"` — vẫn lỗi, vì OpenNext nhúng WASM dạng base64 khi đóng gói nên không còn là import tĩnh. Đây là bug đã biết của Prisma (issue 28657), chưa có bản vá. Ứng dụng **đã deploy và phục vụ được**; chỉ phần truy vấn cơ sở dữ liệu hỏng. → **Đã xử lý bằng cách đổi sang Drizzle**, xem `ADR-003`. |
 
 | 2026-09-05 | **Bài học nền tảng:** chốt Prisma trong `AGENTS.md` và chốt Cloudflare trong `ADR-002` ở hai thời điểm khác nhau, không ai kiểm chứng hai thứ chạy cùng nhau. Xung đột chỉ lộ ra sau khi đã viết xong xác thực, phân quyền và lưu trữ. ⇒ **Deploy thử ngay sau khi dựng xong nền móng**, đừng đợi tới lúc có nhiều tính năng. |
+
+| 2026-09-05 | **Ba cái bẫy khi deploy lên Workers**: (1) `opennextjs-cloudflare deploy` **không tự build lại** — chạy `next build` rồi deploy sẽ đẩy bundle cũ, route mới trả 404. Đã gộp build vào script `cf:deploy`. (2) **Không được giữ connection pool dùng chung** giữa các request: Worker bị đóng băng giữa các lần gọi, kết nối TCP đứt, request sau ném `Error 1101`. Phải tạo kết nối theo từng request (`maxUses: 1` + React `cache()`). (3) **TanStack Table v9** tuy là bản ổn định mới nhất nhưng đổi hẳn sang mô hình atoms/features, rất ít ví dụ thực tế — đã ghim **v8.21.3** cho chắc. |
 
 ## Ghi chú kỹ thuật cần nhớ
 
