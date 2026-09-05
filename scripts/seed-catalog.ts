@@ -149,7 +149,8 @@ async function main() {
       tenantId: tenant.id, code: 'GOI0002', kind: 'package',
       name: 'Liệu trình da mụn 10 buổi + phục hồi',
       categoryId: categories['Gói liệu trình'], unitId: units['Gói'],
-      basePrice: '5000000', validityType: 'months', validityValue: 12,
+      // Mua rời 10×350k + 2×500k = 4.500.000 -> gói 3.800.000, tiết kiệm ~15%
+      basePrice: '3800000', validityType: 'months', validityValue: 12,
     },
 
     // Thẻ tài khoản

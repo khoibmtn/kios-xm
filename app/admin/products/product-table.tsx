@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, type PaginationState } from '@/components/data-table/data-table'
 import { Badge, CheckboxFilter, FilterGroup, RadioFilter, SelectFilter } from '@/components/data-table/filters'
@@ -32,6 +33,7 @@ export interface ProductRow {
 type StockFilter = 'all' | 'low' | 'out'
 
 export function ProductTable({ rows, showCost }: { rows: ProductRow[]; showCost: boolean }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [kinds, setKinds] = useState<ProductKind[]>([])
   const [category, setCategory] = useState('')
@@ -221,6 +223,7 @@ export function ProductTable({ rows, showCost }: { rows: ProductRow[]; showCost:
       pagination={pagination}
       onPaginationChange={setPagination}
       storageKey="products"
+      onRowClick={(r) => router.push(`/admin/products/${r.id}`)}
       search={{
         value: search,
         onChange: (v) => {
