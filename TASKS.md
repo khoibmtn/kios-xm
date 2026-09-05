@@ -15,9 +15,9 @@
 
 | ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
 |---|---|---|---|---|---|
-| T-01 | Khởi tạo Next.js 15 + TypeScript + Tailwind + ESLint/Prettier | Claude | TODO | | `pnpm dev` chạy; Tailwind áp dụng được; `pnpm build` sạch |
+| T-01 | Khởi tạo Next.js + TypeScript + Tailwind + ESLint/Prettier | Claude | DOING | Claude 05/09 | `pnpm dev` chạy; Tailwind áp dụng được; `pnpm build` sạch |
 | T-02 | Cài shadcn/ui, thiết lập design token (màu, spacing, font Inter/Be Vietnam Pro) | Antigravity | TODO | | Có `Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`; hiển thị đúng tiếng Việt có dấu |
-| T-03 | Prisma + Postgres (Neon), schema M0: tenants, branches, users, roles, user_branch_roles, tenant_features | Claude | TODO | | `prisma migrate dev` chạy; seed 1 tenant + 1 chi nhánh + 1 owner |
+| T-03 | Prisma + Supabase Postgres, schema M0: tenants, branches, users, roles, user_branch_roles, tenant_features, tenant_settings, files, outbox_events, audit_log | Claude | DOING | Claude 05/09 | `prisma migrate dev` chạy; seed 1 tenant + 1 chi nhánh + 1 owner |
 | T-04 | Auth.js: đăng nhập email/mật khẩu, session mang `tenantId` + `branchId` | Claude | TODO | | Đăng nhập/đăng xuất; route `(admin)` chặn khi chưa đăng nhập |
 | T-05 | Layout Quản trị: topbar + sidebar theo cây menu trong `docs/research/01-module-map.md` | Antigravity | TODO | | Đủ nhóm menu; thu gọn được; mobile có drawer; active state đúng |
 | T-06 | Layout POS: header 2 tab (Lịch hẹn / Bán hàng), không sidebar | Antigravity | TODO | | Chạy tốt ở 1024×768 ngang và 375px |
