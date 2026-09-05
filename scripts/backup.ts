@@ -34,12 +34,25 @@ async function main() {
 
   console.log('1) Kết xuất cơ sở dữ liệu')
   // --no-owner/--no-acl: bản sao lưu để khôi phục sang project khác cũng dùng được
-  const { stdout } = await run(
-    'pg_dump',
-    [connectionString, '--no-owner', '--no-acl', '--format=plain'],
-    { maxBuffer: 512 * 1024 * 1024, encoding: 'buffer' } as never,
-  )
-  const dump = stdout as unknown as Buffer
+  let dump: Buffer
+  try {
+    const { stdout } = await run(
+      'pg_dump',
+      [connectionString, '--no-owner', '--no-acl', '--format=plain'],
+      { maxBuffer: 512 * 1024 * 1024, encoding: 'buffer' } as never,
+    )
+    dump = stdout as unknown as Buffer
+  } catch (e) {
+    // Thông báo mặc định chỉ nói "Command failed" và che mất chuỗi kết nối,
+    // nên phải lấy stderr ra mới biết vì sao.
+    const err = e as { stderr?: Buffer | string; message?: string }
+    const detail = err.stderr
+      ? Buffer.isBuffer(err.stderr)
+        ? err.stderr.toString('utf8')
+        : err.stderr
+      : (err.message ?? '')
+    throw new Error(`pg_dump lỗi:\n${detail.trim()}`)
+  }
   console.log(`   → ${(dump.length / 1024 / 1024).toFixed(2)} MB chưa nén`)
 
   if (dump.length < 1024) {
