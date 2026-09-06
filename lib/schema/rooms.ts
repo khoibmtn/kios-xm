@@ -21,7 +21,7 @@ export const roomGroups = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex('room_groups_tenant_name_key').on(t.tenantId, t.name)],
+  (t) => [uniqueIndex('room_groups_tenant_id_name_key').on(t.tenantId, t.name)],
 )
 
 export const rooms = pgTable(
@@ -44,7 +44,7 @@ export const rooms = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex('rooms_tenant_branch_name_key').on(t.tenantId, t.branchId, t.name),
+    uniqueIndex('rooms_tenant_id_branch_id_name_key').on(t.tenantId, t.branchId, t.name),
     index('rooms_branch_active_idx').on(t.branchId, t.isActive),
   ],
 )

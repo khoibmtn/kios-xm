@@ -131,10 +131,10 @@ export function RoomManager({
         </p>
         {canManage && (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setGroupDraft({ id: null, name: '' })}>
+            <Button variant="outline" size="sm" onClick={() => { setMessage(''); setGroupDraft({ id: null, name: '' }) }}>
               <Plus className="size-4" /> Nhóm
             </Button>
-            <Button size="sm" onClick={() => setDraft(EMPTY_ROOM)}>
+            <Button size="sm" onClick={() => { setMessage(''); setFieldErrors({}); setDraft(EMPTY_ROOM) }}>
               <Plus className="size-4" /> Thêm phòng
             </Button>
           </div>
@@ -267,6 +267,14 @@ export function RoomManager({
             }
           >
             <div className="space-y-4">
+              {/* Lỗi phải nằm TRONG hộp thoại: banner ở trang phía sau bị lớp
+                  phủ che, người dùng chỉ thấy hộp thoại đứng im. */}
+              {message && (
+                <p role="alert" className="text-danger bg-danger/10 rounded-md px-3 py-2 text-sm">
+                  {message}
+                </p>
+              )}
+
               <Field label="Tên phòng" required error={fieldErrors.name}>
                 <TextInput
                   value={draft.name}
@@ -335,6 +343,12 @@ export function RoomManager({
               </>
             }
           >
+            <div className="space-y-4">
+            {message && (
+              <p role="alert" className="text-danger bg-danger/10 rounded-md px-3 py-2 text-sm">
+                {message}
+              </p>
+            )}
             <Field label="Tên nhóm" required hint="Ví dụ: Tầng 1, Khu VIP, Phòng xông hơi">
               <TextInput
                 value={groupDraft.name}
@@ -348,6 +362,7 @@ export function RoomManager({
                 autoFocus
               />
             </Field>
+            </div>
           </DialogContent>
         )}
       </Dialog>

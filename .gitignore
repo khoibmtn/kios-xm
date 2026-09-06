@@ -25,3 +25,6 @@ next-env.d.ts
 # Thư mục build của OpenNext — CHỨA BIẾN MÔI TRƯỜNG, tuyệt đối không commit
 .open-next/
 .wrangler/
+
+# Dữ liệu thật của spa dùng để thử nhập tệp — không commit
+.local-data/

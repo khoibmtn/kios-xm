@@ -100,7 +100,10 @@ const baseFields = {
 
 const validity = {
   validityType: z.enum(['days', 'months', 'fixed_date', 'unlimited']).default('unlimited'),
-  validityValue: optionalCount('Hạn dùng phải là số nguyên lớn hơn 0', { min: 1, integer: true }),
+  validityValue: optionalCount('Hạn dùng phải là số nguyên lớn hơn 0', {
+    min: 1,
+    integer: true,
+  }),
 }
 
 /** Gói phải có ít nhất một dịch vụ; mỗi dòng cần số buổi và giá lẻ. */
@@ -121,98 +124,117 @@ const materialLine = z.object({
   quantity: z.coerce.number().positive('Định mức phải lớn hơn 0'),
 })
 
+const productVariant = z.object({
+  kind: z.literal('product'),
+  ...baseFields,
+  cost: optionalMoney,
+  trackInventory: z.coerce.boolean().default(true),
+  minQuantity: optionalCount('Tồn tối thiểu phải là số không âm'),
+  maxQuantity: optionalCount('Tồn tối đa phải là số không âm'),
+})
+
+const serviceVariant = z.object({
+  kind: z.literal('service'),
+  ...baseFields,
+  cost: optionalMoney,
+  durationMinutes: z.coerce
+    .number('Thời lượng phải là số')
+    .int('Thời lượng phải là số nguyên phút')
+    .min(5, 'Thời lượng tối thiểu 5 phút')
+    .max(600, 'Thời lượng tối đa 10 tiếng'),
+  materials: z.array(materialLine).default([]),
+})
+
+const cardVariant = z.object({
+  kind: z.literal('card'),
+  ...baseFields,
+  ...validity,
+  cardFaceValue: money,
+  cardBonusValue: optionalMoney,
+})
+
+const packageBase = {
+  kind: z.literal('package'),
+  ...baseFields,
+  ...validity,
+} as const
+
+/** Nhập tay: gói rỗng là lỗi người dùng sửa được ngay, nên chặn từ đầu. */
+const packageVariant = z.object({
+  ...packageBase,
+  components: z.array(packageComponent).min(1, 'Gói phải có ít nhất một dịch vụ'),
+})
+
+/** Nhập từ tệp: buổi được nối ở lượt sau, xem `productImportSchema`. */
+const packageVariantLoose = z.object({
+  ...packageBase,
+  components: z.array(packageComponent).default([]),
+})
+
+type ProductLike =
+  | z.infer<typeof productVariant>
+  | z.infer<typeof serviceVariant>
+  | z.infer<typeof cardVariant>
+  | z.infer<typeof packageVariantLoose>
+
 export const productSchema = z
-  .discriminatedUnion('kind', [
-    z.object({
-      kind: z.literal('product'),
-      ...baseFields,
-      cost: optionalMoney,
-      trackInventory: z.coerce.boolean().default(true),
-      minQuantity: optionalCount('Tồn tối thiểu phải là số không âm'),
-      maxQuantity: optionalCount('Tồn tối đa phải là số không âm'),
-    }),
+  .discriminatedUnion('kind', [productVariant, serviceVariant, packageVariant, cardVariant])
+  .superRefine(sharedRules)
 
-    z.object({
-      kind: z.literal('service'),
-      ...baseFields,
-      cost: optionalMoney,
-      durationMinutes: z.coerce
-        .number('Thời lượng phải là số')
-        .int('Thời lượng phải là số nguyên phút')
-        .min(5, 'Thời lượng tối thiểu 5 phút')
-        .max(600, 'Thời lượng tối đa 10 tiếng'),
-      materials: z.array(materialLine).default([]),
-    }),
-
-    z.object({
-      kind: z.literal('package'),
-      ...baseFields,
-      ...validity,
-      components: z.array(packageComponent).min(1, 'Gói phải có ít nhất một dịch vụ'),
-    }),
-
-    z.object({
-      kind: z.literal('card'),
-      ...baseFields,
-      ...validity,
-      cardFaceValue: money,
-      cardBonusValue: optionalMoney,
-    }),
-  ])
-  .superRefine((data, ctx) => {
-    // Hạn dùng theo ngày/tháng thì bắt buộc có số
-    if ('validityType' in data) {
-      const needsValue = data.validityType === 'days' || data.validityType === 'months'
-      if (needsValue && !data.validityValue) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['validityValue'],
-          message: 'Chọn hạn dùng theo ngày/tháng thì phải nhập số',
-        })
-      }
-    }
-
-    // Tồn tối đa phải lớn hơn tồn tối thiểu
-    if (data.kind === 'product' && data.minQuantity != null && data.maxQuantity != null) {
-      if (data.maxQuantity < data.minQuantity) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['maxQuantity'],
-          message: 'Tồn tối đa phải lớn hơn tồn tối thiểu',
-        })
-      }
-    }
-
-    // Một dịch vụ chỉ được xuất hiện một lần trong gói
-    if (data.kind === 'package') {
-      const seen = new Set<string>()
-      data.components.forEach((c, i) => {
-        if (seen.has(c.serviceId)) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['components', i, 'serviceId'],
-            message: 'Dịch vụ này đã có trong gói',
-          })
-        }
-        seen.add(c.serviceId)
+function sharedRules(data: ProductLike, ctx: z.RefinementCtx) {
+  // Hạn dùng theo ngày/tháng thì bắt buộc có số
+  if ('validityType' in data) {
+    const needsValue = data.validityType === 'days' || data.validityType === 'months'
+    if (needsValue && !data.validityValue) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['validityValue'],
+        message: 'Chọn hạn dùng theo ngày/tháng thì phải nhập số',
       })
     }
+  }
 
-    // Tương tự với định mức nguyên vật liệu
-    if (data.kind === 'service') {
-      const seen = new Set<string>()
-      data.materials.forEach((m, i) => {
-        if (seen.has(m.materialId)) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['materials', i, 'materialId'],
-            message: 'Nguyên vật liệu này đã có trong định mức',
-          })
-        }
-        seen.add(m.materialId)
+  // Tồn tối đa phải lớn hơn tồn tối thiểu
+  if (data.kind === 'product' && data.minQuantity != null && data.maxQuantity != null) {
+    if (data.maxQuantity < data.minQuantity) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['maxQuantity'],
+        message: 'Tồn tối đa phải lớn hơn tồn tối thiểu',
       })
     }
-  })
+  }
+
+  // Một dịch vụ chỉ được xuất hiện một lần trong gói
+  if (data.kind === 'package') {
+    const seen = new Set<string>()
+    data.components.forEach((c, i) => {
+      if (seen.has(c.serviceId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['components', i, 'serviceId'],
+          message: 'Dịch vụ này đã có trong gói',
+        })
+      }
+      seen.add(c.serviceId)
+    })
+  }
+
+  // Tương tự với định mức nguyên vật liệu
+  if (data.kind === 'service') {
+    const seen = new Set<string>()
+    data.materials.forEach((m, i) => {
+      if (seen.has(m.materialId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['materials', i, 'materialId'],
+          message: 'Nguyên vật liệu này đã có trong định mức',
+        })
+      }
+      seen.add(m.materialId)
+    })
+  }
+}
 
 export type ProductInput = z.infer<typeof productSchema>
 
@@ -223,3 +245,15 @@ export const CODE_PREFIX: Record<ProductInput['kind'], string> = {
   package: 'GOI',
   card: 'THE',
 }
+
+/**
+ * Bản dùng khi nhập từ tệp: **gói được phép chưa có buổi**.
+ *
+ * Tệp phẳng ghi thành phần bằng mã hàng, mà mã đó có thể nằm ở dòng phía sau
+ * trong cùng tệp. Nên lượt nhập đầu chỉ ghi bản ghi gói, lượt sau mới nối buổi
+ * (`linkImportComponentsAction`). Ràng buộc "ít nhất một buổi" vẫn giữ nguyên ở
+ * `productSchema` cho đường nhập tay, nơi người dùng thấy ngay lỗi và sửa được.
+ */
+export const productImportSchema = z
+  .discriminatedUnion('kind', [productVariant, serviceVariant, packageVariantLoose, cardVariant])
+  .superRefine(sharedRules)

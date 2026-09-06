@@ -8,8 +8,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/data-table/filters'
 import { KIND_LABEL } from '@/lib/catalog/labels'
 import { formatMoney } from '@/lib/format'
-import { parseCsv, toImportRows, type ImportRow, type RowProblem } from '@/lib/catalog/import-csv'
-import { importProductsAction, type ImportOutcome } from './actions'
+import {
+  FIELD_LABEL,
+  toImportRows,
+  type ImportPlan,
+  type ImportRow,
+  type RowProblem,
+} from '@/lib/catalog/import-csv'
+import { readImportFile } from '@/lib/catalog/import-file'
+import {
+  importProductsAction,
+  linkImportComponentsAction,
+  type ImportOutcome,
+} from './actions'
 
 /** Ghi mỗi lần 50 dòng: đủ nhanh mà không chạm giới hạn thời gian của Worker. */
 const BATCH_SIZE = 50
@@ -31,6 +42,10 @@ export function ImportPanel() {
   const [fileError, setFileError] = useState('')
   const [outcomes, setOutcomes] = useState<ImportOutcome[] | null>(null)
   const [progress, setProgress] = useState(0)
+  const [reading, setReading] = useState(false)
+  const [linking, setLinking] = useState(false)
+  const [linkOutcomes, setLinkOutcomes] = useState<ImportOutcome[]>([])
+  const [columns, setColumns] = useState<Pick<ImportPlan, 'usedColumns' | 'ignoredColumns'> | null>(null)
   const [pending, startTransition] = useTransition()
 
   const reset = () => {
@@ -40,46 +55,71 @@ export function ImportPanel() {
     setFileError('')
     setOutcomes(null)
     setProgress(0)
+    setColumns(null)
+    setLinkOutcomes([])
   }
 
   const onFile = async (file: File) => {
     reset()
     setFileName(file.name)
+    setReading(true)
 
-    if (/\.xlsx?$/i.test(file.name)) {
-      setFileError(
-        'Tệp Excel (.xlsx) chưa đọc được. Trong Excel chọn Lưu thành / Save As → CSV UTF-8 rồi tải lên lại.',
-      )
-      return
+    try {
+      const parsed = await readImportFile(file)
+      if (parsed.error) {
+        setFileError(parsed.error)
+        return
+      }
+
+      const result = toImportRows(parsed)
+      setMissingColumns(result.missingColumns)
+      setRows(result.rows)
+      setProblems(result.problems)
+      setColumns({ usedColumns: result.usedColumns, ignoredColumns: result.ignoredColumns })
+    } finally {
+      setReading(false)
     }
-
-    const text = await file.text()
-    const parsed = parseCsv(text)
-    if (parsed.error) {
-      setFileError(parsed.error)
-      return
-    }
-
-    const result = toImportRows(parsed)
-    setMissingColumns(result.missingColumns)
-    setRows(result.rows)
-    setProblems(result.problems)
   }
 
   const run = () => {
     startTransition(async () => {
       const all: ImportOutcome[] = []
 
+      // Lượt 1: bản ghi hàng hoá
       for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE)
-        const result = await importProductsAction(batch)
-
+        const result = await importProductsAction(rows.slice(i, i + BATCH_SIZE))
         if (result.error) {
           setFileError(result.error)
-          break
+          setOutcomes(all)
+          return
         }
         all.push(...result.outcomes)
         setProgress(Math.min(i + BATCH_SIZE, rows.length))
+      }
+
+      /*
+       * Lượt 2: nối buổi của gói và định mức của dịch vụ. Phải đợi lượt 1 xong
+       * hẳn vì thành phần trỏ tới hàng hoá khác bằng mã, và mã đó có thể nằm ở
+       * dòng phía sau trong cùng tệp.
+       */
+      const withComponents = rows.filter(
+        (r) => r.components.length > 0 && all.some((o) => o.line === r.line && o.status !== 'failed'),
+      )
+
+      if (withComponents.length > 0) {
+        setLinking(true)
+        setProgress(0)
+
+        for (let i = 0; i < withComponents.length; i += BATCH_SIZE) {
+          const result = await linkImportComponentsAction(withComponents.slice(i, i + BATCH_SIZE))
+          if (result.error) {
+            setFileError(result.error)
+            break
+          }
+          setLinkOutcomes((prev) => [...prev, ...result.outcomes])
+          setProgress(Math.min(i + BATCH_SIZE, withComponents.length))
+        }
+        setLinking(false)
       }
 
       setOutcomes(all)
@@ -96,7 +136,8 @@ export function ImportPanel() {
       <section className="border-border bg-card space-y-3 rounded-lg border p-5">
         <h2 className="font-semibold">1. Chọn tệp</h2>
         <p className="text-muted-foreground text-sm">
-          Tệp CSV, mỗi dòng một hàng hoá. Bắt buộc có ba cột{' '}
+          Tệp Excel (.xlsx) hoặc CSV, mỗi dòng một hàng hoá — tệp xuất từ KiotViet
+          dùng thẳng được. Bắt buộc có ba cột{' '}
           <strong className="text-foreground font-medium">Tên hàng</strong>,{' '}
           <strong className="text-foreground font-medium">Loại</strong>,{' '}
           <strong className="text-foreground font-medium">Giá bán</strong>. Các cột khác
@@ -119,8 +160,12 @@ export function ImportPanel() {
               if (file) void onFile(file)
             }}
           />
-          <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={pending}>
-            <Upload className="size-4" /> Chọn tệp CSV
+          <Button
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+            disabled={pending || reading}
+          >
+            <Upload className="size-4" /> {reading ? 'Đang đọc tệp…' : 'Chọn tệp'}
           </Button>
           {fileName && <span className="text-muted-foreground text-sm">{fileName}</span>}
         </div>
@@ -135,6 +180,30 @@ export function ImportPanel() {
           <p role="alert" className="text-danger bg-danger/10 rounded-md px-4 py-3 text-sm">
             Tệp thiếu cột bắt buộc: {missingColumns.map((c) => REQUIRED_LABEL[c]).join(', ')}.
           </p>
+        )}
+
+        {/* Nói rõ đọc cột nào — khi con số nhập vào không như mong đợi thì câu
+            hỏi đầu tiên bao giờ cũng là "nó lấy từ cột nào?" */}
+        {columns && columns.usedColumns.length > 0 && (
+          <div className="bg-muted/40 rounded-md p-4 text-sm">
+            <p className="font-medium">Cột đọc được</p>
+            <ul className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+              {columns.usedColumns.map((c) => (
+                <li key={c.header} className="flex items-baseline gap-2">
+                  <span className="truncate">{c.header}</span>
+                  <span className="text-muted-foreground shrink-0 text-xs">
+                    → {FIELD_LABEL[c.field] ?? c.field}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {columns.ignoredColumns.length > 0 && (
+              <p className="text-muted-foreground mt-3 text-xs">
+                Bỏ qua {columns.ignoredColumns.length} cột: {columns.ignoredColumns.join(', ')}
+              </p>
+            )}
+          </div>
         )}
       </section>
 
@@ -207,7 +276,11 @@ export function ImportPanel() {
 
           <div className="flex items-center gap-3">
             <Button onClick={run} disabled={pending}>
-              {pending ? `Đang ghi ${progress}/${rows.length}…` : `Nhập ${rows.length} hàng hoá`}
+              {!pending
+                ? `Nhập ${rows.length} hàng hoá`
+                : linking
+                  ? `Đang nối thành phần ${progress}…`
+                  : `Đang ghi ${progress}/${rows.length}…`}
             </Button>
             <Button variant="outline" onClick={reset} disabled={pending}>
               Chọn tệp khác
@@ -227,6 +300,35 @@ export function ImportPanel() {
             {updated > 0 && <Badge>{updated} cập nhật</Badge>}
             {failed.length > 0 && <Badge tone="danger">{failed.length} lỗi</Badge>}
           </div>
+
+          {linkOutcomes.length > 0 && (
+            <div className="bg-muted/40 rounded-md p-4 text-sm">
+              <p className="font-medium">
+                Đã nối thành phần cho {linkOutcomes.filter((o) => o.status !== 'failed').length} hàng hoá
+              </p>
+              <ul className="mt-2 space-y-1">
+                {linkOutcomes.slice(0, 12).map((o) => (
+                  <li key={o.line} className="flex items-baseline gap-2">
+                    <span className="min-w-0 truncate">{o.name}</span>
+                    <span
+                      className={
+                        o.status === 'failed'
+                          ? 'text-danger shrink-0 text-xs'
+                          : 'text-muted-foreground shrink-0 text-xs'
+                      }
+                    >
+                      {o.message}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {linkOutcomes.length > 12 && (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  … và {linkOutcomes.length - 12} dòng nữa.
+                </p>
+              )}
+            </div>
+          )}
 
           {failed.length > 0 && (
             <ul className="space-y-1 text-sm">

@@ -89,7 +89,9 @@ export async function saveRoomAction(
     return { ok: true }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    if (message.includes('rooms_tenant_branch_name_key')) {
+    // Tên do Postgres tự đặt khi khai UNIQUE trong CREATE TABLE, không phải
+    // tên trong `uniqueIndex(...)` của lược đồ Drizzle — cái đó chỉ mô tả.
+    if (message.includes('rooms_tenant_id_branch_id_name_key')) {
       return {
         ok: false,
         error: 'Chi nhánh này đã có phòng trùng tên.',
@@ -153,7 +155,7 @@ export async function saveRoomGroupAction(
     return { ok: true, ...created }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    if (message.includes('room_groups_tenant_name_key')) {
+    if (message.includes('room_groups_tenant_id_name_key')) {
       return { ok: false, error: 'Nhóm vị trí tên này đã có rồi.' }
     }
     console.error('[saveRoomGroupAction]', message)

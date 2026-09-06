@@ -1,13 +1,11 @@
 import { KIND_LABEL, type ProductKind } from './labels'
 
 /**
- * Đọc tệp CSV hàng hoá để nhập hàng loạt.
+ * Đọc tệp CSV hàng hoá, và ánh xạ cột chung cho cả .xlsx (xem `import-file.ts`).
  *
- * Vì sao CSV chứ không phải .xlsx: đọc được .xlsx cần thư viện phân tích ZIP +
- * XML gần một megabyte, mà gói Worker đã sát trần dung lượng của gói miễn phí.
- * Excel lưu sang CSV chỉ mất một thao tác, còn phía xuất tệp của phần mềm này
- * vốn đã là CSV. Đổi lại là toàn bộ việc đọc tệp diễn ra trong trình duyệt:
- * không tốn CPU của Worker, không vướng giới hạn kích thước tải lên.
+ * Toàn bộ việc đọc tệp diễn ra trong trình duyệt: không tốn CPU của Worker,
+ * không vướng giới hạn kích thước tải lên, và thư viện đọc .xlsx nằm ở chunk
+ * tĩnh chứ không vào gói Worker.
  *
  * Ba thứ định dạng phải chịu đựng, đều xuất phát từ Excel bản tiếng Việt:
  *  - Dấu phân cách là **chấm phẩy**, vì dấu phẩy đã dùng làm dấu thập phân.
@@ -148,15 +146,31 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   unitName: ['đơn vị', 'đơn vị tính', 'đvt', 'don vi tinh', 'unit'],
   basePrice: ['giá bán', 'gia ban', 'price'],
   cost: ['giá vốn', 'gia von', 'cost'],
-  durationMinutes: ['thời lượng (phút)', 'thời lượng', 'thoi luong', 'duration'],
+  durationMinutes: ['thời lượng', 'thoi luong', 'duration'],
   cardFaceValue: ['mệnh giá', 'menh gia'],
   cardBonusValue: ['tặng thêm', 'tang them'],
-  minQuantity: ['tồn tối thiểu', 'ton toi thieu'],
-  isActive: ['trạng thái', 'trang thai', 'status'],
+  minQuantity: ['tồn tối thiểu', 'tồn nhỏ nhất', 'ton toi thieu'],
+  maxQuantity: ['tồn tối đa', 'tồn lớn nhất', 'ton toi da'],
+  isActive: ['trạng thái', 'đang kinh doanh', 'trang thai', 'status'],
+  allowsSale: ['được bán trực tiếp', 'cho phép bán'],
+  validityType: ['loại hsd', 'hạn sử dụng'],
+  validityValue: ['chi tiết hsd'],
+  /** "SP000243:3" với gói, "SP000046:0.01|SP000061:1" với định mức dịch vụ. */
+  componentsRaw: ['dịch vụ/thành phần', 'thành phần', 'định mức'],
   description: ['mô tả', 'mo ta', 'description'],
 }
 
-const normalise = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
+/*
+ * Bỏ phần trong ngoặc trước khi so khớp: KiotViet ghi "Nhóm hàng(3 Cấp)" và
+ * "Hình ảnh (url1,url2...)". Phần trong ngoặc là chú thích cho người đọc, đưa
+ * vào bảng tên cột thì mỗi lần họ sửa chú thích là một lần ánh xạ hỏng.
+ */
+const normalise = (s: string) =>
+  s
+    .replace(/\([^)]*\)/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
 
 /** Ánh xạ tiêu đề trong tệp về tên trường nội bộ. */
 export function mapHeaders(headers: string[]): Record<string, string> {
@@ -187,6 +201,7 @@ const KIND_ALIASES: Record<string, ProductKind> = {
   'dịch vụ': 'service',
   service: 'service',
   'gói dịch vụ': 'package',
+  'gói dịch vụ, liệu trình': 'package',
   'gói': 'package',
   'liệu trình': 'package',
   package: 'package',
@@ -206,6 +221,33 @@ export function normaliseMoney(raw: string): string {
   return digits
 }
 
+/** Một dòng "MÃ:SỐ" trong cột thành phần. */
+export interface ComponentRef {
+  code: string
+  quantity: number
+}
+
+/**
+ * Cột "Dịch vụ/Thành phần" của KiotViet chở hai thứ khác nhau tuỳ loại hàng:
+ *  - Gói:      `SP000243:3`  → dịch vụ SP000243, 3 buổi
+ *  - Dịch vụ:  `SP000046:0.01|SP000061:1` → định mức nguyên vật liệu mỗi buổi
+ *
+ * Nhờ vậy một tệp phẳng vẫn chở đủ cấu trúc gói và công thức tiêu hao — điều
+ * tôi đã kết luận vội là không thể trước khi xem tệp thật.
+ */
+export function parseComponentRefs(raw: string): ComponentRef[] {
+  if (!raw.trim()) return []
+
+  return raw
+    .split('|')
+    .map((part) => {
+      const [code, qty] = part.split(':')
+      const quantity = Number((qty ?? '').replace(/[^\d.]/g, ''))
+      return { code: (code ?? '').trim().toUpperCase(), quantity }
+    })
+    .filter((c) => c.code !== '' && Number.isFinite(c.quantity) && c.quantity > 0)
+}
+
 export interface ImportRow {
   line: number
   code: string
@@ -220,8 +262,14 @@ export interface ImportRow {
   cardFaceValue: string
   cardBonusValue: string
   minQuantity: string
+  maxQuantity: string
   description: string
   isActive: boolean
+  allowsSale: boolean
+  validityType: 'days' | 'months' | 'unlimited'
+  validityValue: string
+  /** Buổi trong gói, hoặc định mức nguyên vật liệu của dịch vụ. */
+  components: ComponentRef[]
 }
 
 export interface RowProblem {
@@ -237,12 +285,84 @@ export interface RowProblem {
  * thiếu thời lượng…) để nguyên cho `productSchema` phía máy chủ, tránh hai nơi
  * cùng định nghĩa một luật rồi lệch nhau.
  */
-export function toImportRows(
-  parsed: ParseResult,
-): { rows: ImportRow[]; problems: RowProblem[]; missingColumns: string[] } {
+const unsetIfZero = (v: string) => (Number(v) === 0 ? '' : v)
+
+/** Giữ lại chữ số và dấu thập phân; "1.234,5" kiểu Việt về "1234.5". */
+function numeric(raw: string): string {
+  const cleaned = raw.replace(/[^\d.,]/g, '')
+  // Dấu phẩy là thập phân trong tiếng Việt, dấu chấm là ngăn nghìn
+  return cleaned.includes(',') ? cleaned.replace(/\./g, '').replace(',', '.') : cleaned
+}
+
+/**
+ * "Vô thời hạn" / "30 ngày" / "12 tháng" → cặp (kiểu, số).
+ * KiotViet để trống với hàng không có hạn dùng, nên trống cũng là vô thời hạn.
+ */
+function parseValidity(
+  type: string,
+  detail: string,
+): { validityType: 'days' | 'months' | 'unlimited'; validityValue: string } {
+  const text = `${type} ${detail}`.toLowerCase()
+  const number = text.match(/\d+/)?.[0] ?? ''
+
+  if (/tháng|thang|month/.test(text) && number) {
+    return { validityType: 'months', validityValue: number }
+  }
+  if (/ngày|ngay|day/.test(text) && number) {
+    return { validityType: 'days', validityValue: number }
+  }
+  return { validityType: 'unlimited', validityValue: '' }
+}
+
+export interface ImportPlan {
+  rows: ImportRow[]
+  problems: RowProblem[]
+  missingColumns: string[]
+  /** Cột trong tệp đã hiểu được, kèm trường tương ứng — để người dùng đối chiếu. */
+  usedColumns: { header: string; field: string }[]
+  /** Cột có trong tệp nhưng phần mềm chưa dùng tới. */
+  ignoredColumns: string[]
+}
+
+/** Nhãn tiếng Việt của từng trường, dùng khi khoe bảng ánh xạ cột. */
+export const FIELD_LABEL: Record<string, string> = {
+  code: 'Mã hàng',
+  name: 'Tên hàng',
+  kind: 'Loại',
+  categoryName: 'Nhóm hàng',
+  brandName: 'Thương hiệu',
+  unitName: 'Đơn vị',
+  basePrice: 'Giá bán',
+  cost: 'Giá vốn',
+  durationMinutes: 'Thời lượng',
+  cardFaceValue: 'Mệnh giá',
+  cardBonusValue: 'Tặng thêm',
+  minQuantity: 'Tồn tối thiểu',
+  isActive: 'Trạng thái',
+  description: 'Mô tả',
+  maxQuantity: 'Tồn tối đa',
+  allowsSale: 'Cho phép bán',
+  validityType: 'Hạn dùng',
+  validityValue: 'Chi tiết hạn dùng',
+  componentsRaw: 'Thành phần / định mức',
+}
+
+export function toImportRows(parsed: ParseResult): ImportPlan {
   const mapping = mapHeaders(parsed.headers)
+
+  /*
+   * Khoe rõ cột nào hiểu được, cột nào bỏ qua. Tệp xuất từ phần mềm khác luôn
+   * có cột lạ, và khi con số nhập vào không như mong đợi thì câu hỏi đầu tiên
+   * bao giờ cũng là "nó đọc cột nào?". Trả lời sẵn còn hơn để người dùng đoán.
+   */
+  const usedColumns = Object.entries(mapping).map(([field, header]) => ({ field, header }))
+  const usedHeaders = new Set(usedColumns.map((c) => c.header))
+  const ignoredColumns = parsed.headers.filter((h) => h !== '' && !usedHeaders.has(h))
+
   const missingColumns = (['name', 'kind', 'basePrice'] as const).filter((f) => !mapping[f])
-  if (missingColumns.length > 0) return { rows: [], problems: [], missingColumns }
+  if (missingColumns.length > 0) {
+    return { rows: [], problems: [], missingColumns, usedColumns, ignoredColumns }
+  }
 
   const get = (row: ParsedRow, field: string) =>
     mapping[field] ? (row.values[mapping[field]] ?? '') : ''
@@ -287,12 +407,25 @@ export function toImportRows(
       durationMinutes: get(row, 'durationMinutes').replace(/[^\d]/g, ''),
       cardFaceValue: normaliseMoney(get(row, 'cardFaceValue')),
       cardBonusValue: normaliseMoney(get(row, 'cardBonusValue')),
-      minQuantity: get(row, 'minQuantity').replace(/[^\d.,]/g, '').replace(',', '.'),
+      /*
+       * KiotViet ghi 0 cho "chưa cấu hình định mức tồn", không phải "định mức
+       * bằng 0". Giữ nguyên số 0 sẽ biến mọi sản phẩm thành dưới định mức ngay
+       * khi bán hết, và cảnh báo kêu suốt thì chẳng ai còn nhìn.
+       */
+      minQuantity: unsetIfZero(numeric(get(row, 'minQuantity'))),
+      maxQuantity: unsetIfZero(numeric(get(row, 'maxQuantity'))),
       description: get(row, 'description'),
-      // Chỉ chữ "ngừng" mới tắt; tệp thiếu cột trạng thái thì mặc định đang bán
-      isActive: !/ngừng|ngung|inactive|khóa|khoa/i.test(get(row, 'isActive')),
+      /*
+       * KiotViet ghi 1/0, phần mềm khác ghi chữ. Chỉ "0" hoặc chữ mang nghĩa
+       * ngừng mới tắt; thiếu cột thì mặc định đang bán, vì tệp danh mục hầu
+       * như luôn là hàng đang kinh doanh.
+       */
+      isActive: !/^0$|ngừng|ngung|inactive|khóa|khoa/i.test(get(row, 'isActive').trim()),
+      allowsSale: !/^0$|không|khong/i.test(get(row, 'allowsSale').trim()),
+      ...parseValidity(get(row, 'validityType'), get(row, 'validityValue')),
+      components: parseComponentRefs(get(row, 'componentsRaw')),
     })
   }
 
-  return { rows, problems, missingColumns: [] }
+  return { rows, problems, missingColumns: [], usedColumns, ignoredColumns }
 }

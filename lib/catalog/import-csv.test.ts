@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { mapHeaders, normaliseMoney, parseCsv, parseKind, toImportRows } from './import-csv'
+import { gridToParseResult } from './import-file'
 
 describe('Đọc tệp CSV hàng hoá', () => {
   it('nhận dấu chấm phẩy — Excel bản tiếng Việt xuất ra như vậy', () => {
@@ -99,5 +100,54 @@ describe('Đọc tệp CSV hàng hoá', () => {
 
     const { rows: noStatus } = toImportRows(parseCsv('Tên hàng;Loại;Giá bán\nKem C;Sản phẩm;1000'))
     assert.equal(noStatus[0].isActive, true)
+  })
+})
+
+describe('Đọc lưới ô từ tệp Excel', () => {
+  it('tìm đúng dòng tiêu đề khi phía trên có dòng trang trí', () => {
+    /*
+     * KiotViet chèn tiêu đề trang phía trên bảng thật. Lấy cứng dòng đầu làm
+     * tiêu đề cột sẽ đọc ra một bảng chỉ có một cột tên "DANH SÁCH HÀNG HOÁ".
+     */
+    const grid = [
+      ['DANH SÁCH HÀNG HOÁ', null, null],
+      ['Ngày xuất: 06/09/2026', null, null],
+      ['Mã hàng hóa', 'Tên hàng', 'Giá bán'],
+      ['SP000242', 'Body Scrub Quế hồi', 120000],
+      [null, null, null],
+    ]
+    const r = gridToParseResult(grid)
+    assert.deepEqual(r.headers, ['Mã hàng hóa', 'Tên hàng', 'Giá bán'])
+    assert.equal(r.rows.length, 1)
+    assert.equal(r.rows[0].values['Giá bán'], '120000')
+    // Dòng 4 trong Excel — người dùng mở tệp ra là thấy đúng chỗ
+    assert.equal(r.rows[0].line, 4)
+  })
+
+  it('ô ngày tháng về dạng chuỗi YYYY-MM-DD', () => {
+    const grid = [
+      ['Tên hàng', 'Ngày tạo'],
+      ['Kem A', new Date('2026-03-01T00:00:00Z')],
+    ]
+    const r = gridToParseResult(grid)
+    assert.equal(r.rows[0].values['Ngày tạo'], '2026-03-01')
+  })
+
+  it('tệp không có bảng nào thì báo rõ', () => {
+    const r = gridToParseResult([['Chỉ một ô'], [null]])
+    assert.match(r.error ?? '', /không tìm thấy dòng tiêu đề/i)
+  })
+
+  it('khoe cột nào đọc được, cột nào bỏ qua', () => {
+    const grid = [
+      ['Mã hàng hóa', 'Tên hàng', 'Loại hàng', 'Giá bán', 'Mã vạch', 'Trọng lượng'],
+      ['SP01', 'Kem A', 'Sản phẩm', 100000, '8938', '50g'],
+    ]
+    const plan = toImportRows(gridToParseResult(grid))
+    assert.deepEqual(plan.ignoredColumns, ['Mã vạch', 'Trọng lượng'])
+    assert.deepEqual(
+      plan.usedColumns.map((c) => c.field).sort(),
+      ['basePrice', 'code', 'kind', 'name'],
+    )
   })
 })

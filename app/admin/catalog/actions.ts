@@ -1,11 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, like, ne, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { assertPermission, ForbiddenError } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { brands, categories, products, units } from '@/lib/schema'
+import { brands, categories, units } from '@/lib/schema'
 
 export type CatalogKind = 'category' | 'brand' | 'unit'
 
@@ -30,16 +30,16 @@ const UNIQUE_KEY: Record<CatalogKind, string> = {
   unit: 'units_tenant_name_key',
 }
 
-/**
- * `path` là chuỗi id tổ tiên kể cả chính nó: `/goc/con/chau/`.
+/*
+ * `categories.path` là chuỗi id tổ tiên kể cả chính nó: `/goc/con/chau/`, giữ
+ * sẵn để hỏi "mọi nhánh dưới X" chỉ tốn một câu `LIKE X.path || '%'`.
  *
- * Giữ sẵn như vậy để hỏi "mọi nhánh dưới X" chỉ là một câu `LIKE X.path || '%'`
- * thay vì đệ quy — nhóm hàng của spa nông nhưng câu truy vấn này sẽ nằm trong
- * đường đi của mọi màn hình lọc hàng hoá.
+ * Cột này do **trigger trong cơ sở dữ liệu** tính, không phải mã ở đây — xem
+ * `drizzle/0007_category_path_trigger.sql`. Trước đó nó được ghi ở tầng ứng
+ * dụng, và kịch bản seed lại hiểu nó là "đường dẫn tên nhóm" rồi ghi tên vào;
+ * hai cách hiểu cùng tồn tại êm đẹp cho tới khi có nhóm con thật thì phép kiểm
+ * tra vòng lặp lặng lẽ vô hiệu. Giá trị suy ra được thì để nơi duy nhất suy ra.
  */
-function pathOf(parentPath: string | null, id: string): string {
-  return `${parentPath ?? '/'}${id}/`
-}
 
 export async function saveCatalogItemAction(
   kind: CatalogKind,
@@ -74,74 +74,41 @@ export async function saveCatalogItemAction(
       return { ok: true }
     }
 
-    // ── Nhóm hàng: có cây, nên phải lo cả đường dẫn lẫn vòng lặp ──
+    // ── Nhóm hàng: có cây ──
     const parent = parentId && parentId !== '' ? parentId : null
     if (parent && !idSchema.safeParse(parent).success) {
       return { ok: false, error: 'Nhóm cha không hợp lệ.' }
     }
 
-    let parentPath: string | null = null
-    if (parent) {
-      const [row] = await db
-        .select({ path: categories.path })
-        .from(categories)
-        .where(and(eq(categories.id, parent), eq(categories.tenantId, user.tenantId)))
-        .limit(1)
-      if (!row) return { ok: false, error: 'Không tìm thấy nhóm cha.' }
-      parentPath = row.path
-    }
-
     if (!id) {
-      const [created] = await db
-        .insert(categories)
-        .values({ tenantId: user.tenantId, name, parentId: parent })
-        .returning({ id: categories.id })
-      await db
-        .update(categories)
-        .set({ path: pathOf(parentPath, created.id) })
-        .where(eq(categories.id, created.id))
+      await db.insert(categories).values({ tenantId: user.tenantId, name, parentId: parent })
       revalidatePath('/admin/catalog')
       revalidatePath('/admin/products')
       return { ok: true }
     }
 
-    const [current] = await db
-      .select({ path: categories.path })
-      .from(categories)
-      .where(and(eq(categories.id, id), eq(categories.tenantId, user.tenantId)))
-      .limit(1)
-    if (!current) return { ok: false, error: 'Không tìm thấy nhóm hàng.' }
-
     /*
-     * Chuyển một nhóm vào chính nhánh con của nó sẽ cắt rời cả nhánh khỏi cây:
-     * không còn đường về gốc, nhóm biến mất khỏi mọi màn hình mà dữ liệu vẫn
-     * nằm đó. `path` cho phép chặn bằng đúng một phép so chuỗi.
+     * Chặn vòng lặp ở đây chỉ để có câu tiếng Việt tử tế; trigger trong cơ sở
+     * dữ liệu mới là thứ bảo đảm, và nó phủ cả những đường ghi không đi qua
+     * màn hình này.
      */
-    if (parent && (parent === id || parentPath?.startsWith(current.path))) {
-      return { ok: false, error: 'Không thể chuyển một nhóm vào chính nhánh con của nó.' }
+    if (parent) {
+      const [parentRow] = await db
+        .select({ path: categories.path })
+        .from(categories)
+        .where(and(eq(categories.id, parent), eq(categories.tenantId, user.tenantId)))
+        .limit(1)
+      if (!parentRow) return { ok: false, error: 'Không tìm thấy nhóm cha.' }
+
+      if (parent === id || parentRow.path.includes(`/${id}/`)) {
+        return { ok: false, error: 'Không thể chuyển một nhóm vào chính nhánh con của nó.' }
+      }
     }
 
-    const newPath = pathOf(parentPath, id)
-
-    await db.transaction(async (tx) => {
-      await tx.update(categories).set({ name, parentId: parent, path: newPath }).where(eq(categories.id, id))
-
-      // Cả nhánh con phải đổi theo, nếu không đường dẫn sẽ trỏ về nơi cũ
-      if (newPath !== current.path) {
-        await tx
-          .update(categories)
-          .set({
-            path: sql`${newPath} || substring(${categories.path} from ${current.path.length + 1})`,
-          })
-          .where(
-            and(
-              eq(categories.tenantId, user.tenantId),
-              ne(categories.id, id),
-              like(categories.path, `${current.path}%`),
-            ),
-          )
-      }
-    })
+    await db
+      .update(categories)
+      .set({ name, parentId: parent })
+      .where(and(eq(categories.id, id), eq(categories.tenantId, user.tenantId)))
 
     revalidatePath('/admin/catalog')
     revalidatePath('/admin/products')
@@ -150,6 +117,9 @@ export async function saveCatalogItemAction(
     const message = e instanceof Error ? e.message : String(e)
     if (message.includes(UNIQUE_KEY[kind])) {
       return { ok: false, error: `${LABEL[kind]} tên này đã có rồi.` }
+    }
+    if (message.includes('nhánh con của nó')) {
+      return { ok: false, error: 'Không thể chuyển một nhóm vào chính nhánh con của nó.' }
     }
     console.error('[saveCatalogItemAction]', message)
     return { ok: false, error: 'Không lưu được. Vui lòng thử lại.' }
