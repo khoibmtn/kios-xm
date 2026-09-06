@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Kết quả dựng cho Cloudflare — mã sinh tự động, không phải mã của dự án.
+    // Không bỏ qua thì 206 lỗi của nó nhấn chìm vài lỗi thật của mình.
+    ".open-next/**",
+    ".wrangler/**",
   ]),
 ]);
 

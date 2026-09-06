@@ -335,3 +335,6 @@ export * from './catalog'
 
 // Vị trí / phòng
 export * from './rooms'
+
+// Khách hàng
+export * from './customers'
