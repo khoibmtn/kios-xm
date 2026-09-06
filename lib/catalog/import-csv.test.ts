@@ -133,6 +133,24 @@ describe('Đọc lưới ô từ tệp Excel', () => {
     assert.equal(r.rows[0].values['Ngày tạo'], '2026-03-01')
   })
 
+  it('dòng tiêu đề trang lặp lại không bị nhầm là tiêu đề cột', () => {
+    /*
+     * KiotViet xuất một số tệp với ô gộp ở dòng đầu, và khi ghi ra .xlsx thì
+     * cùng một chuỗi được lặp đủ mọi cột. Đếm ô có nội dung sẽ hoà với dòng
+     * tiêu đề thật (16 ô cả hai) rồi chọn nhầm dòng trên; đếm ô *khác nhau*
+     * thì dòng trang trí chỉ được 1.
+     */
+    const grid = [
+      Array(6).fill('DANH SÁCH NHÂN VIÊN'),
+      ['STT', 'Mã nhân viên', 'Tên hàng', 'Loại', 'Giá bán', 'Ghi chú'],
+      ['1', 'NV000001', 'Hương', 'Sản phẩm', 100000, ''],
+    ]
+    const r = gridToParseResult(grid)
+    assert.equal(r.headers[1], 'Mã nhân viên')
+    assert.equal(r.rows.length, 1)
+    assert.equal(r.rows[0].line, 3)
+  })
+
   it('tệp không có bảng nào thì báo rõ', () => {
     const r = gridToParseResult([['Chỉ một ô'], [null]])
     assert.match(r.error ?? '', /không tìm thấy dòng tiêu đề/i)

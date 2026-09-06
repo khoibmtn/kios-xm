@@ -27,12 +27,23 @@ export async function readImportFile(file: File): Promise<ParseResult> {
     const { default: readXlsxFile } = await import('read-excel-file/browser')
     return gridToParseResult(unwrapSheets(await readXlsxFile(file)))
   } catch (e) {
+    /*
+     * KiotViet xuất .xlsx theo **hai phương ngữ khác nhau** — cùng một tài
+     * khoản, cùng một ngày. Danh sách hàng hoá và khách hàng dùng bảng chuỗi
+     * chung (`xl/sharedStrings.xml`) và thẻ không tiền tố; danh sách nhân viên
+     * và bảng hoa hồng lại nhúng chuỗi thẳng vào ô, thẻ có tiền tố `<x:c>`, và
+     * không có tệp sharedStrings nào. Thư viện đọc chỉ hiểu phương ngữ thứ
+     * nhất, gặp phương ngữ thứ hai thì ném lỗi không nói lên điều gì.
+     *
+     * Nên câu báo ở đây không đổ cho "tệp .xls cũ" — đó là suy đoán sai và sẽ
+     * khiến người dùng đi lưu lại tệp một cách vô ích. Xem `TASKS.md` T-23.
+     */
     console.error('[readImportFile]', e)
     return {
       headers: [],
       rows: [],
       error:
-        'Không đọc được tệp Excel này. Nếu tệp có định dạng .xls cũ, hãy mở bằng Excel rồi lưu lại thành .xlsx hoặc CSV.',
+        'Chưa đọc được tệp Excel này — nó dùng một biến thể định dạng khác. Cách nhanh nhất: mở bằng Excel rồi lưu lại thành CSV UTF-8 và tải lên lại.',
     }
   }
 }
@@ -79,19 +90,21 @@ function cellToString(value: unknown): string {
 
 export function gridToParseResult(grid: unknown[][]): ParseResult {
   /*
-   * KiotViet chèn vài dòng tiêu đề trang phía trên bảng thật, nên dòng đầu
-   * chưa chắc là tiêu đề cột. Lấy dòng **có nhiều ô nhất** trong 10 dòng đầu:
-   * dòng tiêu đề bao giờ cũng kín ô nhất, còn dòng trang trí thường chỉ có
-   * một ô.
+   * KiotViet chèn dòng tiêu đề trang phía trên bảng thật, nên dòng đầu chưa
+   * chắc là tiêu đề cột. Chọn theo số ô **khác nhau**, không phải số ô có nội
+   * dung: dòng trang trí là một ô gộp, khi xuất ra thì cùng một chuỗi được lặp
+   * lại đủ mọi cột ("DANH SÁCH NHÂN VIÊN" ×16) nên đếm ô đầy sẽ hoà với dòng
+   * tiêu đề thật và chọn nhầm dòng trên. Tên cột thì luôn khác nhau từng cái.
    */
   const scan = grid.slice(0, 10)
   let headerIndex = 0
   let best = -1
 
   scan.forEach((row, i) => {
-    const filled = row.filter((c) => cellToString(c) !== '').length
-    if (filled > best) {
-      best = filled
+    const values = row.map(cellToString).filter((c) => c !== '')
+    const distinct = new Set(values).size
+    if (distinct > best) {
+      best = distinct
       headerIndex = i
     }
   })
