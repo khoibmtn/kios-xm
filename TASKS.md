@@ -41,7 +41,7 @@
 | T-14 | Vị trí/phòng + nhóm vị trí | Antigravity | DONE | Claude 05/09 | CRUD; trường: tên, ghi chú, nhóm, trạng thái, số thứ tự |
 | T-15 | Nhân viên: CRUD + phòng ban + chức danh | Any | DONE | Claude 05/09 | Đã thêm + sửa + cho nghỉ việc một hồ sơ thật trên bản triển khai; phòng ban/chức danh tạo nhanh ngay trong form; nhật ký ghi rõ "Ngừng làm việc từ …" |
 | T-22 | Cấp tài khoản đăng nhập cho nhân viên + gán vai trò theo chi nhánh (`user_branch_roles`) | Claude | TODO | | Tạo tài khoản từ hồ sơ nhân viên, đặt mật khẩu ban đầu, đăng nhập được đúng quyền |
-| T-16 | Nhập/Xuất Excel hàng hoá & khách hàng | Antigravity | DONE | Claude 05/09 | Nhập CSV có xem trước + báo lỗi theo từng dòng, tự tạo nhóm/thương hiệu/đơn vị theo tên, trùng mã thì cập nhật. 12 kiểm thử cho bộ đọc tệp. **Hai điểm lệch đề bài, cố ý**: (1) CSV chứ không .xlsx — thư viện đọc .xlsx gần 1 MB, gói Worker đã sát trần gói miễn phí, Excel lưu sang CSV chỉ một thao tác; (2) phần khách hàng chưa làm được vì **chưa có bảng `customers`** (thuộc M4) |
+| T-16 | Nhập/Xuất Excel hàng hoá & khách hàng | Antigravity | DONE | Claude 07/09 | Đọc thẳng .xlsx (đọc trong trình duyệt nên không đụng gói Worker) lẫn CSV, xem trước + khoe cột nào đọc/bỏ, nhập theo lô. **Đã nhập thật 207 dòng danh mục KiotViet của spa**: 38 nhóm hàng, 95 thương hiệu, 20 đơn vị, 11 buổi trong gói, 183 định mức NVL — định mức khớp đúng giá vốn KiotViet ghi. Phần khách hàng vẫn chờ bảng `customers` (M4) |
 
 ## Backlog (mở chi tiết khi tới milestone)
 
