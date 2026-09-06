@@ -1,39 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, desc, eq, like, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { assertPermission, ForbiddenError } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { packageItems, products, serviceMaterials } from '@/lib/schema'
 import { writeAudit, diffFields } from '@/lib/audit'
-import { CODE_PREFIX, productSchema, type ProductInput } from '@/lib/catalog/product-schema'
+import { productSchema, type ProductInput } from '@/lib/catalog/product-schema'
+import { nextProductCode } from '@/lib/catalog/next-code'
 
 export interface ActionState {
   error?: string
   /** Lỗi theo từng trường, khoá là đường dẫn zod nối bằng dấu chấm. */
   fieldErrors?: Record<string, string>
   savedId?: string
-}
-
-/**
- * Sinh mã hàng kế tiếp theo loại: SP0001, DV0002…
- *
- * Lấy mã lớn nhất hiện có rồi cộng một. Có thể trùng nếu hai người tạo cùng
- * lúc, nên ràng buộc UNIQUE trên (tenant_id, code) mới là thứ bảo đảm cuối
- * cùng — chỗ này chỉ lo phần gợi ý cho tiện.
- */
-async function nextCode(tenantId: string, kind: ProductInput['kind']): Promise<string> {
-  const prefix = CODE_PREFIX[kind]
-  const [row] = await db
-    .select({ code: products.code })
-    .from(products)
-    .where(and(eq(products.tenantId, tenantId), like(products.code, `${prefix}%`)))
-    .orderBy(desc(products.code))
-    .limit(1)
-
-  const current = row?.code?.slice(prefix.length) ?? '0'
-  const next = Number.parseInt(current, 10) + 1
-  return `${prefix}${String(Number.isFinite(next) ? next : 1).padStart(4, '0')}`
 }
 
 function collectErrors(error: { issues: { path: PropertyKey[]; message: string }[] }) {
@@ -161,7 +141,7 @@ export async function saveProductAction(
         const row = toRow(input, user.tenantId, input.code?.trim() || existing.code)
         await tx.update(products).set(row).where(eq(products.id, id))
       } else {
-        const code = input.code?.trim() || (await nextCode(user.tenantId, input.kind))
+        const code = input.code?.trim() || (await nextProductCode(user.tenantId, input.kind, tx))
         const [created] = await tx
           .insert(products)
           .values(toRow(input, user.tenantId, code))
@@ -273,5 +253,5 @@ export async function toggleProductActiveAction(
 /** Gợi ý mã tiếp theo cho giao diện, không ràng buộc gì. */
 export async function suggestCodeAction(kind: ProductInput['kind']): Promise<string> {
   const user = await assertPermission('product.view')
-  return nextCode(user.tenantId, kind)
+  return nextProductCode(user.tenantId, kind)
 }

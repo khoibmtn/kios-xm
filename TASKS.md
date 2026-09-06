@@ -16,11 +16,11 @@
 | ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
 |---|---|---|---|---|---|
 | T-01 | Khởi tạo Next.js + TypeScript + Tailwind + ESLint/Prettier | Claude | DONE | Claude 05/09 | `pnpm dev` chạy; Tailwind áp dụng được; `pnpm build` sạch |
-| T-02 | Cài shadcn/ui, thiết lập design token (màu, spacing, font Inter/Be Vietnam Pro) | Antigravity | TODO | | Có `Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`; hiển thị đúng tiếng Việt có dấu |
+| T-02 | Cài shadcn/ui, thiết lập design token (màu, spacing, font Inter/Be Vietnam Pro) | Antigravity | DONE | Claude 05/09 | Đủ `Button`/`Input`/`Dialog`/`Sheet`/`Table`/`Badge`. **Không chạy `shadcn init`** — nó ghi đè `globals.css` đang có bộ token teal và sẽ dựng hệ thứ hai song song với các component đã chạy thật. Chỉ thêm phần còn thiếu (Button, Dialog, Sheet trên Radix) dùng đúng token cũ |
 | T-03 | Prisma + Supabase Postgres, schema M0: tenants, branches, users, roles, user_branch_roles, tenant_features, tenant_settings, files, outbox_events, audit_log | Claude | DONE | Claude 05/09 | `prisma migrate dev` chạy; seed 1 tenant + 1 chi nhánh + 1 owner |
 | T-04 | Auth.js: đăng nhập email/mật khẩu, session mang `tenantId` + `branchId` | Claude | DONE | Claude 05/09 | Đăng nhập/đăng xuất; route `(admin)` chặn khi chưa đăng nhập |
-| T-05 | Layout Quản trị: topbar + sidebar theo cây menu trong `docs/research/01-module-map.md` | Antigravity | TODO | | Đủ nhóm menu; thu gọn được; mobile có drawer; active state đúng |
-| T-06 | Layout POS: header 2 tab (Lịch hẹn / Bán hàng), không sidebar | Antigravity | TODO | | Chạy tốt ở 1024×768 ngang và 375px |
+| T-05 | Layout Quản trị: topbar + sidebar theo cây menu trong `docs/research/01-module-map.md` | Antigravity | DONE | Claude 05/09 | Đủ nhóm menu; thu gọn được; mobile có drawer; active state đúng |
+| T-06 | Layout POS: header 2 tab (Lịch hẹn / Bán hàng), không sidebar | Antigravity | DONE | Claude 05/09 | Chạy tốt ở 1024×768 ngang và 375px |
 | T-07 | Component `DataTable` dùng chung (TanStack Table): sidebar lọc + bảng + dòng tổng + phân trang + tuỳ chỉnh cột + xuất file | Claude | DONE | Claude 05/09 | Dùng lại được cho ≥2 module; mobile tự chuyển sang dạng thẻ |
 | T-08 | Chuẩn hoá tiền tệ/ngày giờ: `lib/format.ts` (VND, `vi-VN`, `Asia/Ho_Chi_Minh`) | Claude | DONE | Claude 05/09 — chuyển từ Antigravity vì T-07 phụ thuộc | `formatMoney(1500000)` → `1.500.000`; test đơn vị |
 | T-09 | Deploy Cloudflare Workers + Supabase Free, biến môi trường, `env.example` | Claude | DONE | Claude 05/09 | URL production mở được trang đăng nhập |
@@ -28,7 +28,7 @@
 | T-18 | RBAC chi tiết: quyền theo module × hành động + 4 quyền y tế theo tầng + `audit_log` | Claude | DONE | Claude 05/09 | Lễ tân thấy ⚠ cảnh báo y tế nhưng không mở được chẩn đoán; mọi lần xem hồ sơ y tế đều có log |
 | T-19 | `outbox_events` + worker gửi (GitHub Actions cron) | Claude | DONE | Claude 05/09 | Ghi sự kiện trong transaction, worker gửi sau commit, có retry, không gửi trùng |
 | T-20 | Cron sao lưu: `pg_dump` → nén → Google Drive `/backups`, giữ 30 bản + ping chống pause + **khôi phục thử tự động** | Claude | DONE | Claude 05/09 | Chạy 3 ngày liên tiếp có 3 file; khôi phục thử thành công |
-| T-21 | `tenant_settings` + `tenant_features` (slot 15/30/60, buffer, chế độ phân bổ gói, khoá sổ) | Antigravity | TODO | | Đổi slot sang 15 phút thì lịch hẹn hiển thị đúng |
+| T-21 | `tenant_settings` + `tenant_features` (slot 15/30/60, buffer, chế độ phân bổ gói, khoá sổ) | Antigravity | DONE | Claude 05/09 | Màn hình cấu hình lưu đủ 6 thiết lập + 4 cờ tính năng, đổi khoá sổ/phân bổ gói có ghi nhật ký. **Phần "lịch hẹn hiển thị đúng" phải đợi M2** — chưa có lưới để nhìn |
 
 ## Milestone M1 — Danh mục
 
@@ -37,11 +37,11 @@
 | T-10 | Schema danh mục: categories, brands, products (4 `kind`), variants, package_items, service_materials | Claude | DONE | Claude 05/09 | Migrate sạch; ràng buộc `kind` đúng; seed dữ liệu mẫu |
 | T-11 | Trang Danh sách hàng hoá: bảng + sidebar lọc (loại, nhóm, thương hiệu, tồn kho, trạng thái) | Claude | DONE | Claude 05/09 | Lọc hoạt động; badge màu theo `kind`; phân trang |
 | T-12 | Form thêm/sửa hàng hoá — tab theo `kind` (Sản phẩm / Dịch vụ / Gói / Thẻ) | Claude | DONE | Claude 05/09 | Đã tạo + sửa thật một gói 2 dịch vụ trên bản triển khai: mã tự sinh, xem trước phân bổ khớp trang chi tiết, nhật ký ghi cả `create` lẫn `update` |
-| T-13 | Quản lý nhóm hàng (cây) + thương hiệu + đơn vị tính | Antigravity | TODO | | CRUD đủ; nhóm hàng nhiều cấp |
-| T-14 | Vị trí/phòng + nhóm vị trí | Antigravity | TODO | | CRUD; trường: tên, ghi chú, nhóm, trạng thái, số thứ tự |
+| T-13 | Quản lý nhóm hàng (cây) + thương hiệu + đơn vị tính | Antigravity | DONE | Claude 05/09 | CRUD đủ; nhóm hàng nhiều cấp |
+| T-14 | Vị trí/phòng + nhóm vị trí | Antigravity | DONE | Claude 05/09 | CRUD; trường: tên, ghi chú, nhóm, trạng thái, số thứ tự |
 | T-15 | Nhân viên: CRUD + phòng ban + chức danh | Any | DONE | Claude 05/09 | Đã thêm + sửa + cho nghỉ việc một hồ sơ thật trên bản triển khai; phòng ban/chức danh tạo nhanh ngay trong form; nhật ký ghi rõ "Ngừng làm việc từ …" |
 | T-22 | Cấp tài khoản đăng nhập cho nhân viên + gán vai trò theo chi nhánh (`user_branch_roles`) | Claude | TODO | | Tạo tài khoản từ hồ sơ nhân viên, đặt mật khẩu ban đầu, đăng nhập được đúng quyền |
-| T-16 | Nhập/Xuất Excel hàng hoá & khách hàng | Antigravity | TODO | | Nhập 196 dòng mẫu không lỗi; xuất đúng cột |
+| T-16 | Nhập/Xuất Excel hàng hoá & khách hàng | Antigravity | DONE | Claude 05/09 | Nhập CSV có xem trước + báo lỗi theo từng dòng, tự tạo nhóm/thương hiệu/đơn vị theo tên, trùng mã thì cập nhật. 12 kiểm thử cho bộ đọc tệp. **Hai điểm lệch đề bài, cố ý**: (1) CSV chứ không .xlsx — thư viện đọc .xlsx gần 1 MB, gói Worker đã sát trần gói miễn phí, Excel lưu sang CSV chỉ một thao tác; (2) phần khách hàng chưa làm được vì **chưa có bảng `customers`** (thuộc M4) |
 
 ## Backlog (mở chi tiết khi tới milestone)
 

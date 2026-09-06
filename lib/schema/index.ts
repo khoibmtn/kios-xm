@@ -332,3 +332,6 @@ export const tenantFeatures = pgTable("tenant_features", {
 
 // Danh mục hàng hoá — tách file riêng cho dễ đọc
 export * from './catalog'
+
+// Vị trí / phòng
+export * from './rooms'

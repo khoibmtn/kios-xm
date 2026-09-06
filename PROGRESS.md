@@ -37,6 +37,8 @@
 
 | 2026-09-05 | Claude Code | **T-15 xong**: hồ sơ nhân viên đủ trường theo `docs/research/03-ux-flows.md` §5, phòng ban và chức danh **tạo nhanh ngay trong form** thay vì bắt bỏ dở sang màn hình khác. Cho nghỉ việc ghi thẳng lý do vào nhật ký. Thêm 8 kiểm thử schema. Kèm hai công cụ hạ tầng sinh ra từ sự cố cùng ngày: `npm run db:migrate` (áp migration có ghi lịch sử, thay cho chạy tay) và `npm run db:check` (đối chiếu lược đồ với cơ sở dữ liệu thật) | `app/admin/employees/`, `lib/employees/`, `scripts/migrate.ts`, `scripts/check-schema-sync.ts`, `drizzle/0004`, `drizzle/0005` |
 
+| 2026-09-05 | Claude Code | **Xong nốt bảy task của Antigravity** (T-02, T-05, T-06, T-13, T-14, T-16, T-21): shell quản trị có sidebar theo cây menu đầy đủ (mục chưa dựng hiện mờ kèm "sắp có" thay vì liên kết chết), shell POS hai tab tách hẳn khỏi quản trị, quản lý nhóm hàng nhiều cấp + thương hiệu + đơn vị, vị trí/phòng (bảng mới `rooms`, `room_groups`), màn hình cấu hình chung, và nhập hàng hoá từ tệp CSV có xem trước. M0 và M1 khép lại, chỉ còn T-22 | `app/admin/{admin-shell,nav,catalog,rooms,settings}`, `app/pos/`, `components/ui/`, `lib/catalog/import-csv.ts`, `drizzle/0006_rooms.sql` |
+
 ## Sự cố / bài học
 
 | Ngày | Nội dung |

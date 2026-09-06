@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, type PaginationState } from '@/components/data-table/data-table'
 import { Badge, CheckboxFilter, FilterGroup, RadioFilter, SelectFilter } from '@/components/data-table/filters'
@@ -236,13 +236,22 @@ export function ProductTable({
       onRowClick={(r) => router.push(`/admin/products/${r.id}`)}
       actions={
         canManage ? (
-          <Link
-            href="/admin/products/new"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium"
-          >
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">Thêm hàng hoá</span>
-          </Link>
+          <>
+            <Link
+              href="/admin/products/import"
+              className="border-border hover:bg-muted inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium"
+            >
+              <Upload className="size-4" />
+              <span className="hidden sm:inline">Nhập file</span>
+            </Link>
+            <Link
+              href="/admin/products/new"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium"
+            >
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">Thêm hàng hoá</span>
+            </Link>
+          </>
         ) : undefined
       }
       search={{
