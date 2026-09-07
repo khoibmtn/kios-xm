@@ -5,13 +5,31 @@
 
 ## Trạng thái hiện tại
 
+*Cập nhật 07/09/2026 — đọc phần này trước khi bắt tay vào việc.*
+
 | Mục | Giá trị |
 |---|---|
-| Milestone đang làm | **M1 — Danh mục** (M0 xong phần Claude, còn 4 task giao diện của Antigravity) |
-| Giai đoạn | Đã xong nghiên cứu, chờ anh Khôi chốt Q1–Q5 trong `TASKS.md` |
-| Ứng dụng đã deploy | **Có, chạy đầy đủ** — https://kios-xm.spa-xumay.workers.dev |
-| Schema DB | **24 bảng trên Supabase** — M0 (13) + danh mục M1 (10), đã seed dữ liệu mẫu |
-| Số task DONE | 12 / 21 (M0+M1) — thêm T-10, T-11 |
+| Milestone | **M0 và M1 đã đóng**, còn đúng 2 task lẻ: T-22, T-23 |
+| Ứng dụng đã deploy | **Có, đang chạy dữ liệu thật** — https://kios-xm.spa-xumay.workers.dev |
+| Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
+| Schema DB | **28 bảng trên Supabase**, migration mới nhất `drizzle/0008_customers.sql`. `npm run db:check` báo khớp |
+| Số task DONE | 22 DONE / 2 TODO |
+| Dữ liệu thật đã vào | 207 hàng hoá · 38 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** |
+
+**Bắt tay vào đâu.** Ba hướng, theo thứ tự tôi khuyến nghị:
+
+1. **`customer_packages` (M4)** — 19 buổi của 5 khách hiện đang nằm ở
+   `customers.migrated_remaining_sessions`, là *ảnh chụp chết* không tự trừ.
+   Đây là tiền spa đã thu mà chưa trả dịch vụ, nên nên vào sớm. Nguồn nhập:
+   `.local-data/DanhSachTheDichVu_*.xlsx` (19 gói đã bán).
+2. **M2 — Lịch hẹn**, đúng thứ tự lộ trình.
+3. **T-22 / T-23** — hai task lẻ còn sót, đều nhỏ.
+
+**Việc đang dở:** không có. Cây làm việc sạch, lint 0 lỗi, 44/44 kiểm thử qua.
+
+**Dữ liệu thật nằm ngoài git.** 15 tệp xuất từ KiotViet ở `.local-data/`
+(đã gitignore). Repo **công khai trên GitHub** — không bao giờ commit thư mục
+này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 
 ## Nhật ký
 

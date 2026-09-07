@@ -150,6 +150,14 @@ Khi cần khảo sát thêm:
 - ⚠️ Cạm bẫy đã gặp: gán khung giờ cho dòng dịch vụ trong POS sẽ **tự tạo lịch hẹn thật**.
   Nếu lỡ tạo, phải huỷ ngay và ghi lại vào `PROGRESS.md`.
 - Không bấm "Thanh toán", "Lưu", "Xoá" trên dữ liệu thật.
+- **Dùng cửa sổ Chrome đang mở, đừng mở cửa sổ/hồ sơ mới.** Cửa sổ mới không mang
+  theo phiên đăng nhập, KiotViet đá về trang login và chủ dự án phải đăng nhập lại.
+- Việc **xuất Excel do chủ dự án tự bấm** (agent chỉ tìm và chỉ chỗ): hộp thoại chọn
+  thư mục tải xuống nằm ngoài tầm với của agent. Tệp xuất xong được gom vào
+  `.local-data/`.
+- ⚠️ Bộ lọc mặc định của KiotViet **giấu bớt dòng khi xuất tệp** (Hàng hoá mặc định
+  "Đang kinh doanh"; nhiều màn hình mặc định "Hôm nay"/"Tháng này"). Trước khi tin
+  một tệp xuất, đối chiếu số dòng với con số hiển thị trên màn hình.
 
 ## 6. Định nghĩa "xong" (Definition of Done)
 
