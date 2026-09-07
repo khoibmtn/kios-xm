@@ -1,15 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, PanelLeftClose, PanelLeftOpen, ShoppingCart } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { writeSidebarCookie } from './sidebar-state'
 import type { NavGroup } from './nav'
-
-const COLLAPSE_KEY = 'kios-xm:sidebar-collapsed'
 
 function isActive(pathname: string, item: { href?: string; matchPrefix?: boolean }) {
   if (!item.href) return false
@@ -68,12 +67,14 @@ function NavList({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () =
 export function AdminShell({
   groups,
   children,
+  defaultCollapsed,
   tenantLabel,
   userName,
   signOutButton,
 }: {
   groups: NavGroup[]
   children: React.ReactNode
+  defaultCollapsed: boolean
   tenantLabel: string
   userName: string
   signOutButton: React.ReactNode
@@ -81,25 +82,33 @@ export function AdminShell({
   const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  /*
-   * Trạng thái thu gọn đọc từ trình duyệt, nhưng chỉ sau khi đã gắn vào DOM.
-   * Đọc localStorage ngay trong `useState` sẽ làm HTML máy chủ và trình duyệt
-   * khác nhau, và React sẽ than phiền sai lệch hydration.
-   */
-  const [collapsed, setCollapsed] = useState(false)
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1')
-  }, [])
+  // Máy chủ đã đọc cookie và gửi xuống, nên giá trị đầu tiên đã đúng
+  const [collapsed, setCollapsed] = useState(defaultCollapsed)
 
+  /*
+   * Ghi cookie **ngoài** hàm cập nhật state: React coi hàm cập nhật là thuần
+   * khiết và được phép gọi lại nó, nên nhét việc ghi vào trong đó là mỗi lần
+   * gọi lại một lần lật ngược giá trị đã lưu.
+   */
   const toggleCollapsed = () => {
-    setCollapsed((c) => {
-      localStorage.setItem(COLLAPSE_KEY, c ? '0' : '1')
-      return !c
-    })
+    const next = !collapsed
+    writeSidebarCookie(next)
+    setCollapsed(next)
   }
 
-  // Đổi trang thì đóng ngăn kéo, nếu không nó che mất trang vừa mở
-  useEffect(() => setDrawerOpen(false), [pathname])
+  /*
+   * Đổi trang thì đóng ngăn kéo, nếu không nó che mất trang vừa mở.
+   *
+   * Điều chỉnh ngay trong lượt vẽ chứ không dùng `useEffect`: effect chạy
+   * **sau khi trình duyệt đã vẽ**, nên ngăn kéo sẽ loé lên trên trang mới rồi
+   * mới đóng. Cách này React vẽ lại ngay, chưa kịp hiển thị gì.
+   * https://react.dev/learn/you-might-not-need-an-effect
+   */
+  const [drawerPath, setDrawerPath] = useState(pathname)
+  if (drawerPath !== pathname) {
+    setDrawerPath(pathname)
+    setDrawerOpen(false)
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">
