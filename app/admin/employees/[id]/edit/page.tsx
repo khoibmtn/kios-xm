@@ -74,6 +74,12 @@ export default async function EditEmployeePage({
             </>
           )}
         </p>
+        <Link
+          href={`/admin/employees/${id}/account`}
+          className="text-primary mt-1 inline-block text-sm hover:underline"
+        >
+          {account[0] ? 'Quản lý tài khoản đăng nhập →' : 'Cấp tài khoản đăng nhập →'}
+        </Link>
       </div>
 
       <EmployeeForm initial={initial} {...options} />

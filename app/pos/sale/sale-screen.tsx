@@ -40,6 +40,15 @@ interface Line {
   discountAmount: number
   /** Khác null nghĩa là dòng này trừ buổi từ gói, không thu tiền. */
   packageItemId: string | null
+  /** Buổi đã hẹn tương ứng — `AGENTS.md` §3b.2. */
+  bookingItemId?: string
+}
+
+/** Dòng dịch vụ lấy sẵn từ một lịch hẹn khách vừa làm xong. */
+export interface PresetLine {
+  bookingItemId: string
+  productId: string
+  serviceName: string
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -59,18 +68,43 @@ export function SaleScreen({
   products,
   customers,
   sessions,
+  preset,
 }: {
   products: SaleProduct[]
   customers: SaleCustomer[]
   sessions: SessionOption[]
+  /** Khác null khi mở từ một lịch hẹn — giỏ hàng dựng sẵn theo lịch đó. */
+  preset: { customerId: string | null; lines: PresetLine[] } | null
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
   const [search, setSearch] = useState('')
   const [kind, setKind] = useState<'all' | 'product' | 'service' | 'package'>('all')
-  const [lines, setLines] = useState<Line[]>([])
-  const [customerId, setCustomerId] = useState('')
+  /*
+   * Dựng sẵn giỏ hàng từ lịch hẹn ngay trong `useState` chứ không qua
+   * `useEffect`: effect chạy sau khi trình duyệt đã vẽ, nên lễ tân sẽ thấy giỏ
+   * trống loé lên rồi mới đầy — và dự án cấm setState trong effect.
+   */
+  const [lines, setLines] = useState<Line[]>(() =>
+    (preset?.lines ?? []).flatMap((pl, i) => {
+      const product = products.find((p) => p.id === pl.productId)
+      return product
+        ? [
+            {
+              key: i,
+              product,
+              quantity: 1,
+              unitPrice: Math.round(Number(product.basePrice)),
+              discountAmount: 0,
+              packageItemId: null,
+              bookingItemId: pl.bookingItemId,
+            },
+          ]
+        : []
+    }),
+  )
+  const [customerId, setCustomerId] = useState(preset?.customerId ?? '')
   const [customerSearch, setCustomerSearch] = useState('')
   const [guestName, setGuestName] = useState('')
   const [invoiceDiscount, setInvoiceDiscount] = useState(0)
@@ -153,6 +187,7 @@ export function SaleScreen({
           unitPrice: l.unitPrice,
           discountAmount: l.discountAmount,
           customerPackageItemId: l.packageItemId ?? undefined,
+          bookingItemId: l.bookingItemId,
         })),
         payment: withPayment && total > 0 ? { method, amount: total } : undefined,
       })
@@ -329,6 +364,7 @@ export function SaleScreen({
                   </button>
                 </div>
 
+                {l.bookingItemId && <p className="text-primary mt-0.5 text-xs">Từ lịch hẹn</p>}
                 {l.packageItemId ? (
                   <p className="text-warning mt-1 text-xs font-medium">Dùng buổi từ gói · 0đ</p>
                 ) : (

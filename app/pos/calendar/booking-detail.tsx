@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Sheet, SheetContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -100,6 +101,14 @@ export function BookingDetail({
             <Row label="Kỹ thuật viên" value={item.performerName ?? 'Chưa gán'} />
             <Row label="Trạng thái" value={BOOKING_STATUS_LABEL[item.status] ?? item.status} />
           </dl>
+
+          {canManage && !cancelling && (
+            <Link href={`/pos/sale?booking=${item.bookingId}`} className="block">
+              <Button variant="outline" className="w-full">
+                Bán hàng cho lịch này
+              </Button>
+            </Link>
+          )}
 
           {canManage && !cancelling && (
             <div>

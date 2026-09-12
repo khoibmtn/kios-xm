@@ -48,7 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Lịch hẹn', permission: 'booking.view_all' },
       { label: 'Vị trí, phòng', href: '/admin/rooms', permission: 'settings.manage', matchPrefix: true },
-      { label: 'Hoá đơn', permission: 'invoice.view' },
+      { label: 'Hoá đơn', href: '/admin/invoices', permission: 'invoice.view', matchPrefix: true },
       { label: 'Trả hàng', permission: 'invoice.return' },
     ],
   },

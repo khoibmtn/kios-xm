@@ -1,14 +1,25 @@
-import { and, asc, eq, gt, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
 import { requirePermission } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { customerPackageItems, customerPackages, customers, products, units } from '@/lib/schema'
-import { SaleScreen, type SaleProduct, type SessionOption } from './sale-screen'
+import {
+  bookingItems,
+  bookings,
+  customerPackageItems,
+  customerPackages,
+  customers,
+  invoiceItems,
+  products,
+  units,
+} from '@/lib/schema'
+import { SaleScreen, type PresetLine, type SaleProduct, type SessionOption } from './sale-screen'
 
 export const metadata = { title: 'Bán hàng' }
 export const dynamic = 'force-dynamic'
 
-export default async function PosSalePage() {
+export default async function PosSalePage({ searchParams }: PageProps<'/pos/sale'>) {
   const user = await requirePermission('invoice.create')
+  const params = await searchParams
+  const bookingId = typeof params.booking === 'string' ? params.booking : null
 
   const [productList, customerList, sessionList] = await Promise.all([
     db
@@ -67,8 +78,51 @@ export default async function PosSalePage() {
       ),
   ])
 
+  /*
+   * Mở từ một lịch hẹn: lấy các dòng dịch vụ của lịch đó **chưa nằm trên hoá
+   * đơn nào**. `invoice_items.booking_item_id` có UNIQUE nên bán trùng sẽ bị
+   * chặn ở tầng CSDL, nhưng lọc sẵn ở đây thì lễ tân không phải gặp lỗi mới
+   * biết — họ chỉ thấy những buổi còn bán được.
+   */
+  let preset: { customerId: string | null; lines: PresetLine[] } | null = null
+  if (bookingId) {
+    const rows = await db
+      .select({
+        bookingItemId: bookingItems.id,
+        productId: bookingItems.serviceId,
+        serviceName: bookingItems.serviceName,
+        customerId: bookings.customerId,
+      })
+      .from(bookingItems)
+      .innerJoin(bookings, eq(bookings.id, bookingItems.bookingId))
+      .leftJoin(invoiceItems, eq(invoiceItems.bookingItemId, bookingItems.id))
+      .where(
+        and(
+          eq(bookingItems.tenantId, user.tenantId),
+          eq(bookingItems.bookingId, bookingId),
+          isNull(bookingItems.cancelledAt),
+          isNull(invoiceItems.id),
+        ),
+      )
+      .orderBy(asc(bookingItems.sortOrder))
+
+    if (rows.length > 0) {
+      preset = {
+        customerId: rows[0].customerId,
+        lines: rows
+          .filter((r) => r.productId)
+          .map((r) => ({
+            bookingItemId: r.bookingItemId,
+            productId: r.productId!,
+            serviceName: r.serviceName,
+          })),
+      }
+    }
+  }
+
   return (
     <SaleScreen
+      preset={preset}
       products={productList as SaleProduct[]}
       customers={customerList}
       sessions={sessionList.filter((s) => s.serviceId) as SessionOption[]}

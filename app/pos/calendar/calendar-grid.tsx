@@ -112,6 +112,15 @@ export function CalendarGrid({
     moved: boolean
   } | null>(null)
   const [dragError, setDragError] = useState('')
+
+  /*
+   * Lọc theo kỹ thuật viên và phòng giữ ở phía trình duyệt, không đẩy lên URL:
+   * đây là cách nhìn tạm của người đang đứng ở quầy, không phải chỗ họ muốn
+   * quay lại sau khi tải trang. Ngày và chế độ xem thì ngược lại — chúng ở
+   * URL.
+   */
+  const [performerFilter, setPerformerFilter] = useState('')
+  const [roomFilter, setRoomFilter] = useState('')
   const from = useMemo(() => new Date(fromISO), [fromISO])
   const dayCount = view === 'day' ? 1 : 7
   const step = slotMinutes > 0 ? slotMinutes : 30
@@ -153,9 +162,19 @@ export function CalendarGrid({
    * làn của Google Calendar, và với một spa vài lịch mỗi khung giờ thì kết quả
    * nhìn như nhau.
    */
+  const shown = useMemo(
+    () =>
+      items.filter(
+        (it) =>
+          (!performerFilter || it.performerName === performerFilter) &&
+          (!roomFilter || it.roomName === roomFilter),
+      ),
+    [items, performerFilter, roomFilter],
+  )
+
   const placed = useMemo(() => {
     const byDay = new Map<number, CalendarItem[]>()
-    for (const it of items) {
+    for (const it of shown) {
       const d = dayIndexVN(it.startsAt, fromISO)
       if (d < 0 || d >= dayCount) continue
       byDay.set(d, [...(byDay.get(d) ?? []), it])
@@ -185,7 +204,16 @@ export function CalendarGrid({
       flush()
     }
     return out
-  }, [items, fromISO, dayCount])
+  }, [shown, fromISO, dayCount])
+
+  const performers = useMemo(
+    () => [...new Set(items.map((i) => i.performerName).filter(Boolean))] as string[],
+    [items],
+  )
+  const roomNames = useMemo(
+    () => [...new Set(items.map((i) => i.roomName).filter(Boolean))] as string[],
+    [items],
+  )
 
   const go = (nextDate: string, nextView: 'day' | 'week' = view) =>
     router.push(`/pos/calendar?date=${nextDate}&view=${nextView}`)
@@ -213,6 +241,42 @@ export function CalendarGrid({
           Hôm nay
         </Button>
         <span className="ml-1 font-medium">{rangeLabel}</span>
+
+        {/*
+          Chỉ bày ô lọc khi có từ hai lựa chọn trở lên. Spa hiện có đúng một
+          nhân viên và chưa khai phòng nào — một ô lọc chỉ có một lựa chọn là
+          thứ chiếm chỗ mà không giúp được gì.
+        */}
+        {performers.length > 1 && (
+          <select
+            value={performerFilter}
+            onChange={(e) => setPerformerFilter(e.target.value)}
+            aria-label="Lọc theo kỹ thuật viên"
+            className="border-border rounded-md border px-2 py-1.5 text-sm"
+          >
+            <option value="">Mọi KTV</option>
+            {performers.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        )}
+        {roomNames.length > 1 && (
+          <select
+            value={roomFilter}
+            onChange={(e) => setRoomFilter(e.target.value)}
+            aria-label="Lọc theo phòng"
+            className="border-border rounded-md border px-2 py-1.5 text-sm"
+          >
+            <option value="">Mọi phòng</option>
+            {roomNames.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        )}
 
         {canBook && (
           <Button size="sm" className="ml-auto" onClick={() => setPanel({ date, minute: null })}>
@@ -381,6 +445,12 @@ export function CalendarGrid({
                             })
                           }}
                           onClick={(event) => event.stopPropagation()}
+                          className={cn(
+                            'absolute overflow-hidden rounded border px-1.5 py-0.5 text-left text-[0.7rem] leading-tight',
+                            STATUS_STYLE[item.status] ?? STATUS_STYLE.scheduled,
+                            canBook && 'cursor-grab hover:brightness-95 active:cursor-grabbing',
+                            drag?.id === item.id && 'ring-primary z-20 shadow-lg ring-2',
+                          )}
                           style={{
                             top:
                               (s - gridFrom + (drag?.id === item.id ? drag.offsetMinutes : 0)) *
@@ -405,10 +475,14 @@ export function CalendarGrid({
           </div>
         </div>
 
-        {items.length === 0 && (
+        {shown.length === 0 && (
           <div className="text-muted-foreground pointer-events-none -mt-[40vh] flex flex-col items-center justify-center gap-2 text-center text-sm">
             <CalendarDays className="size-8 opacity-50" />
-            <p>Chưa có lịch hẹn nào trong khoảng này.</p>
+            <p>
+              {items.length === 0
+                ? 'Chưa có lịch hẹn nào trong khoảng này.'
+                : 'Không có lịch nào khớp bộ lọc.'}
+            </p>
           </div>
         )}
       </div>
@@ -424,7 +498,10 @@ export function CalendarGrid({
       )}
 
       <div className="border-border text-muted-foreground shrink-0 border-t px-3 py-1.5 text-sm">
-        Tổng số {items.length} lịch hẹn
+        Tổng số {shown.length} lịch hẹn
+        {shown.length !== items.length && (
+          <span className="text-muted-foreground"> (lọc từ {items.length})</span>
+        )}
       </div>
 
       <BookingDetail

@@ -339,6 +339,154 @@ async function main() {
       await client.query('ROLLBACK TO SAVEPOINT s')
     })
 
+    /*
+     * Nhóm quan trọng nhất của cả tệp: huỷ hoá đơn phải **hoàn buổi lại cho
+     * khách** và **đảo phiếu thu**, bằng bút toán ngược chứ không xoá gì.
+     * Trước migration 0013, xoá hoá đơn còn không hoàn buổi mà chẳng ai báo.
+     */
+    const pkgItemId = (
+      await client.query(
+        `SELECT id, sessions + bonus_sessions - used_sessions AS con
+         FROM customer_package_items
+         WHERE sessions + bonus_sessions - used_sessions > 0 LIMIT 1`,
+      )
+    ).rows[0]
+
+    if (pkgItemId && cashId) {
+      await mustHold('huỷ hoá đơn → hoàn buổi về gói và đảo phiếu thu', async () => {
+        await client.query('SAVEPOINT s')
+        const conTruoc = Number(pkgItemId.con)
+        const quyTruoc = Number(
+          (await client.query(`SELECT balance FROM cash_accounts WHERE id=$1`, [cashId])).rows[0]
+            .balance,
+        )
+
+        // Bán: 1 buổi từ gói + thu 100.000
+        await client.query(
+          `INSERT INTO invoices (id, tenant_id, branch_id, customer_id, code, total, service_allocated_value, status)
+           VALUES ($1,$2,$3,$4,'ZZZ-HUY',100000,500000,'completed')`,
+          [INV, tenantId, branchId, customerId],
+        )
+        const itemId = (
+          await client.query(
+            `INSERT INTO invoice_items (invoice_id, tenant_id, product_name, quantity,
+               customer_package_item_id, allocated_value)
+             VALUES ($1,$2,'Buổi từ gói',1,$3,500000) RETURNING id`,
+            [INV, tenantId, pkgItemId.id],
+          )
+        ).rows[0].id
+        await client.query(
+          `INSERT INTO package_transactions (tenant_id, customer_package_item_id, type, quantity,
+             allocated_value, invoice_item_id)
+           VALUES ($1,$2,'use',-1,500000,$3)`,
+          [tenantId, pkgItemId.id, itemId],
+        )
+        await client.query(
+          `INSERT INTO payments (tenant_id, invoice_id, code, method, amount, cash_account_id)
+           VALUES ($1,$2,'ZZZ-TT-H','cash',100000,$3)`,
+          [tenantId, INV, cashId],
+        )
+
+        const conSauBan = Number(
+          (
+            await client.query(
+              `SELECT sessions + bonus_sessions - used_sessions AS n
+               FROM customer_package_items WHERE id=$1`,
+              [pkgItemId.id],
+            )
+          ).rows[0].n,
+        )
+        assertEqual(conSauBan, conTruoc - 1, 'buổi còn lại sau khi bán')
+
+        // Huỷ bằng bút toán ngược, đúng như `cancelInvoiceAction` làm
+        await client.query(
+          `UPDATE invoices SET status='cancelled', cancelled_at=now(), cancel_note='kiểm thử'
+           WHERE id=$1`,
+          [INV],
+        )
+        await client.query(
+          `INSERT INTO package_transactions (tenant_id, customer_package_item_id, type, quantity,
+             allocated_value, invoice_item_id, note)
+           VALUES ($1,$2,'adjust',1,500000,$3,'Hoàn buổi do huỷ hoá đơn')`,
+          [tenantId, pkgItemId.id, itemId],
+        )
+        await client.query(
+          `INSERT INTO cash_transactions (tenant_id, branch_id, cash_account_id, code, direction,
+             amount, invoice_id, note)
+           VALUES ($1,$2,$3,'HTZZZ-TT-H','out',100000,$4,'Hoàn tiền do huỷ')`,
+          [tenantId, branchId, cashId, INV],
+        )
+
+        const conSauHuy = Number(
+          (
+            await client.query(
+              `SELECT sessions + bonus_sessions - used_sessions AS n
+               FROM customer_package_items WHERE id=$1`,
+              [pkgItemId.id],
+            )
+          ).rows[0].n,
+        )
+        assertEqual(conSauHuy, conTruoc, 'buổi còn lại sau khi huỷ — phải về như cũ')
+
+        const quySauHuy = Number(
+          (await client.query(`SELECT balance FROM cash_accounts WHERE id=$1`, [cashId])).rows[0]
+            .balance,
+        )
+        assertEqual(quySauHuy, quyTruoc, 'số dư quỹ sau khi huỷ — phải về như cũ')
+
+        // Lịch sử phải còn đủ hai vế, không xoá gì
+        const soDong = Number(
+          (
+            await client.query(
+              `SELECT count(*)::int AS n FROM package_transactions WHERE invoice_item_id=$1`,
+              [itemId],
+            )
+          ).rows[0].n,
+        )
+        assertEqual(soDong, 2, 'số dòng sổ cái (phải còn cả "use" lẫn "adjust")')
+        const soPhieu = Number(
+          (
+            await client.query(
+              `SELECT count(*)::int AS n FROM cash_transactions WHERE invoice_id=$1`,
+              [INV],
+            )
+          ).rows[0].n,
+        )
+        assertEqual(soPhieu, 2, 'số phiếu quỹ (phải còn cả thu lẫn chi)')
+
+        await client.query('ROLLBACK TO SAVEPOINT s')
+      })
+
+      await mustHold('xoá hoá đơn đã trừ buổi bị CHẶN — buộc phải huỷ đúng cách', async () => {
+        await client.query('SAVEPOINT s')
+        await client.query(
+          `INSERT INTO invoices (id, tenant_id, branch_id, customer_id, code)
+           VALUES ($1,$2,$3,$4,'ZZZ-XOA')`,
+          [INV, tenantId, branchId, customerId],
+        )
+        const itemId = (
+          await client.query(
+            `INSERT INTO invoice_items (invoice_id, tenant_id, product_name, customer_package_item_id)
+             VALUES ($1,$2,'Buổi',$3) RETURNING id`,
+            [INV, tenantId, pkgItemId.id],
+          )
+        ).rows[0].id
+        await client.query(
+          `INSERT INTO package_transactions (tenant_id, customer_package_item_id, type, quantity,
+             invoice_item_id) VALUES ($1,$2,'use',-1,$3)`,
+          [tenantId, pkgItemId.id, itemId],
+        )
+        let chan = false
+        try {
+          await client.query(`DELETE FROM invoices WHERE id=$1`, [INV])
+        } catch {
+          chan = true
+        }
+        await client.query('ROLLBACK TO SAVEPOINT s')
+        if (!chan) throw new Error('xoá được — khoá ngoại RESTRICT chưa có tác dụng')
+      })
+    }
+
     await mustHold('3 quỹ và 4 kênh bán mặc định đã được tạo', async () => {
       const q = (
         await client.query(`SELECT count(*)::int n FROM cash_accounts WHERE tenant_id=$1`, [
