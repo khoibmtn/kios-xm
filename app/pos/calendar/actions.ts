@@ -129,34 +129,52 @@ export async function createBookingAction(input: CreateBookingInput): Promise<Bo
     const next = Number.parseInt((maxRow?.code ?? '').replace(/\D/g, ''), 10)
     const code = `LH${String(Number.isFinite(next) ? next + 1 : 1).padStart(6, '0')}`
 
-    const [booking] = await db
-      .insert(bookings)
-      .values({
-        tenantId: user.tenantId,
-        branchId: user.branchId,
-        customerId: input.customerId ?? null,
-        guestName: input.guestName?.trim() || null,
-        guestPhone: input.guestPhone?.trim() || null,
-        code,
-        note: input.note?.trim() || null,
-        createdByUserId: user.id,
-      })
-      .returning({ id: bookings.id, code: bookings.code })
+    /*
+     * Phiếu hẹn và các dòng dịch vụ phải nằm trong **một giao dịch**.
+     *
+     * Không có nó thì một lần đặt trùng giờ để lại một phiếu hẹn rỗng: dòng
+     * dịch vụ bị ràng buộc `EXCLUDE` từ chối, nhưng phiếu đã ghi xong rồi.
+     * Phiếu rỗng không hiện trên lưới (lưới đi từ `booking_items`) nên nó nằm
+     * đó vô hình, ăn mất một mã LH và làm bảng đầy rác. Phát hiện được vì lúc
+     * dọn dữ liệu thử thấy xoá ra **ba** phiếu trong khi chỉ đặt thành công
+     * một.
+     *
+     * Bên trong phải dùng `tx`, tuyệt đối không chạm `db` toàn cục: mỗi request
+     * chỉ có **một** kết nối (`lib/db.ts`), gọi `db` trong giao dịch đang mở là
+     * tự khoá chính mình.
+     */
+    const booking = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(bookings)
+        .values({
+          tenantId: user.tenantId,
+          branchId: user.branchId,
+          customerId: input.customerId ?? null,
+          guestName: input.guestName?.trim() || null,
+          guestPhone: input.guestPhone?.trim() || null,
+          code,
+          note: input.note?.trim() || null,
+          createdByUserId: user.id,
+        })
+        .returning({ id: bookings.id, code: bookings.code })
 
-    await db.insert(bookingItems).values(
-      slots.map((s) => ({
-        bookingId: booking.id,
-        tenantId: user.tenantId,
-        serviceId: s.serviceId,
-        serviceName: s.serviceName,
-        roomId: s.roomId ?? null,
-        performerEmployeeId: s.performerEmployeeId ?? null,
-        customerPackageItemId: s.customerPackageItemId ?? null,
-        startsAt: s.startsAt,
-        endsAt: s.endsAt,
-        sortOrder: s.sortOrder,
-      })),
-    )
+      await tx.insert(bookingItems).values(
+        slots.map((s) => ({
+          bookingId: created.id,
+          tenantId: user.tenantId,
+          serviceId: s.serviceId,
+          serviceName: s.serviceName,
+          roomId: s.roomId ?? null,
+          performerEmployeeId: s.performerEmployeeId ?? null,
+          customerPackageItemId: s.customerPackageItemId ?? null,
+          startsAt: s.startsAt,
+          endsAt: s.endsAt,
+          sortOrder: s.sortOrder,
+        })),
+      )
+
+      return created
+    })
 
     await writeAudit({
       tenantId: user.tenantId,

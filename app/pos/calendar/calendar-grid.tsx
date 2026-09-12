@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { BOOKING_STATUS_LABEL } from '@/lib/schema/bookings'
+import { BookingPanel, type BookingOptions } from './booking-panel'
 
 export interface CalendarItem {
   id: string
@@ -72,14 +73,23 @@ export function CalendarGrid({
   view,
   fromISO,
   slotMinutes,
+  options,
+  canBook,
+  todayISO,
+  nowMinute,
 }: {
   items: CalendarItem[]
   date: string
   view: 'day' | 'week'
   fromISO: string
   slotMinutes: number
+  options: BookingOptions
+  canBook: boolean
+  todayISO: string
+  nowMinute: number
 }) {
   const router = useRouter()
+  const [panel, setPanel] = useState<{ date: string; minute: number | null } | null>(null)
   const from = useMemo(() => new Date(fromISO), [fromISO])
   const dayCount = view === 'day' ? 1 : 7
   const step = slotMinutes > 0 ? slotMinutes : 30
@@ -166,8 +176,7 @@ export function CalendarGrid({
       ? `${WEEKDAYS[weekdayIndex(from)]}, ${ddmm(from)}/${yearOf(from)}`
       : `${ddmm(from)} – ${ddmm(new Date(from.getTime() + 6 * DAY_MS))}/${yearOf(from)}`
 
-  const nowMinute = minuteOfDayVN(new Date().toISOString())
-  const todayIndex = days.findIndex((d) => d.iso === isoDate(new Date()))
+  const todayIndex = days.findIndex((d) => d.iso === todayISO)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -178,12 +187,23 @@ export function CalendarGrid({
         <Button variant="outline" size="icon" aria-label="Tiến" onClick={() => shift(1)}>
           <ChevronRight className="size-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => go(isoDate(new Date()))}>
+        <Button variant="outline" size="sm" onClick={() => go(todayISO)}>
           Hôm nay
         </Button>
         <span className="ml-1 font-medium">{rangeLabel}</span>
 
-        <div className="border-border ml-auto flex overflow-hidden rounded-md border">
+        {canBook && (
+          <Button size="sm" className="ml-auto" onClick={() => setPanel({ date, minute: null })}>
+            <Plus className="size-4" /> Đặt lịch
+          </Button>
+        )}
+
+        <div
+          className={cn(
+            'border-border flex overflow-hidden rounded-md border',
+            !canBook && 'ml-auto',
+          )}
+        >
           {(['day', 'week'] as const).map((v) => (
             <button
               key={v}
@@ -233,7 +253,29 @@ export function CalendarGrid({
                   <span className="ml-1.5 font-medium tabular-nums">{ddmm(day.date)}</span>
                 </div>
 
-                <div className="relative" style={{ height: (gridTo - gridFrom) * PX_PER_MINUTE }}>
+                <div
+                  className={cn('relative', canBook && 'cursor-pointer')}
+                  onClick={
+                    canBook
+                      ? (event) => {
+                          /*
+                           * Bấm vào chỗ trống trên lưới là cách đặt lịch nhanh
+                           * nhất ở quầy — lễ tân đã nhìn thấy khoảng trống rồi,
+                           * bắt họ mở panel và chọn lại đúng giờ đó là thừa một
+                           * bước. Làm tròn xuống mốc gần nhất.
+                           */
+                          const box = event.currentTarget.getBoundingClientRect()
+                          const raw = (event.clientY - box.top) / PX_PER_MINUTE + gridFrom
+                          const snapped = Math.floor(raw / step) * step
+                          setPanel({
+                            date: day.iso,
+                            minute: Math.max(0, Math.min(24 * 60 - step, snapped)),
+                          })
+                        }
+                      : undefined
+                  }
+                  style={{ height: (gridTo - gridFrom) * PX_PER_MINUTE }}
+                >
                   {ticks.slice(1, -1).map((m) => (
                     <div
                       key={m}
@@ -263,6 +305,7 @@ export function CalendarGrid({
                       return (
                         <div
                           key={item.id}
+                          onClick={(event) => event.stopPropagation()}
                           title={`${hhmm(s)}–${hhmm(e)} · ${item.customerName} · ${item.serviceName}${
                             item.roomName ? ` · ${item.roomName}` : ''
                           }${item.performerName ? ` · ${item.performerName}` : ''} · ${
@@ -305,6 +348,17 @@ export function CalendarGrid({
       <div className="border-border text-muted-foreground shrink-0 border-t px-3 py-1.5 text-sm">
         Tổng số {items.length} lịch hẹn
       </div>
+
+      {panel && (
+        <BookingPanel
+          open
+          onOpenChange={(next) => !next && setPanel(null)}
+          options={options}
+          todayISO={todayISO}
+          initialDate={panel.date}
+          initialMinute={panel.minute}
+        />
+      )}
     </div>
   )
 }

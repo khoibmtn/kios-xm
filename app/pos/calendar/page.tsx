@@ -1,7 +1,15 @@
 import { and, asc, eq, gte, isNull, lt, sql } from 'drizzle-orm'
-import { requirePermission } from '@/lib/auth/session'
+import { requirePermission, can } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { bookingItems, bookings, customers, employees, rooms, tenantSettings } from '@/lib/schema'
+import {
+  bookingItems,
+  bookings,
+  customers,
+  employees,
+  products,
+  rooms,
+  tenantSettings,
+} from '@/lib/schema'
 import { CalendarGrid, type CalendarItem } from './calendar-grid'
 
 export const metadata = { title: 'Lịch hẹn' }
@@ -26,6 +34,20 @@ function todayInVN(): string {
   return now.toISOString().slice(0, 10)
 }
 
+/**
+ * Phút hiện tại tính từ 00:00 giờ Việt Nam.
+ *
+ * Đọc đồng hồ ngay trong lượt render là đúng ở **server component** có
+ * `force-dynamic`: mỗi request dựng lại một lần, và đó chính là điều ta muốn.
+ * Điều không được làm là đọc nó phía trình duyệt lúc render — chỗ đó React
+ * Compiler chặn có lý, vì hai lượt render liên tiếp sẽ ra hai kết quả khác
+ * nhau. Nên con số này tính ở đây rồi gửi xuống.
+ */
+function nowMinuteInVN(): number {
+  const vn = new Date(Date.now() + TZ_OFFSET_MINUTES * 60_000)
+  return vn.getUTCHours() * 60 + vn.getUTCMinutes()
+}
+
 /** Thứ Hai của tuần chứa ngày đó, tính theo giờ Việt Nam. */
 function mondayOf(isoDate: string): Date {
   const start = startOfDayVN(isoDate)
@@ -42,44 +64,94 @@ export default async function PosCalendarPage({ searchParams }: PageProps<'/pos/
   const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : todayInVN()
   const view = params.view === 'day' ? 'day' : 'week'
 
+  const todayISO = todayInVN()
+  const nowMinuteVN = nowMinuteInVN()
+
   const from = view === 'day' ? startOfDayVN(date) : mondayOf(date)
   const to = new Date(from.getTime() + (view === 'day' ? 1 : 7) * 86_400_000)
 
-  const [found, settingsRow] = await Promise.all([
-    db
-      .select({
-        id: bookingItems.id,
-        bookingId: bookingItems.bookingId,
-        bookingCode: bookings.code,
-        serviceName: bookingItems.serviceName,
-        startsAt: bookingItems.startsAt,
-        endsAt: bookingItems.endsAt,
-        status: bookings.status,
-        customerName: sql<string>`coalesce(${customers.name}, ${bookings.guestName}, 'Khách lẻ')`,
-        customerPhone: sql<string | null>`coalesce(${customers.phone}, ${bookings.guestPhone})`,
-        roomName: rooms.name,
-        performerName: employees.fullName,
-      })
-      .from(bookingItems)
-      .innerJoin(bookings, eq(bookings.id, bookingItems.bookingId))
-      .leftJoin(customers, eq(customers.id, bookings.customerId))
-      .leftJoin(rooms, eq(rooms.id, bookingItems.roomId))
-      .leftJoin(employees, eq(employees.id, bookingItems.performerEmployeeId))
-      .where(
-        and(
-          eq(bookingItems.tenantId, user.tenantId),
-          gte(bookingItems.startsAt, from),
-          lt(bookingItems.startsAt, to),
-          // Dòng đã huỷ không còn giữ chỗ nên cũng không nên chiếm chỗ trên lưới.
-          isNull(bookingItems.cancelledAt),
-        ),
-      )
-      .orderBy(asc(bookingItems.startsAt)),
-    db
-      .select({ slot: tenantSettings.bookingSlotMinutes })
-      .from(tenantSettings)
-      .where(eq(tenantSettings.tenantId, user.tenantId)),
-  ])
+  const [found, settingsRow, customerList, serviceList, roomList, employeeList] = await Promise.all(
+    [
+      db
+        .select({
+          id: bookingItems.id,
+          bookingId: bookingItems.bookingId,
+          bookingCode: bookings.code,
+          serviceName: bookingItems.serviceName,
+          startsAt: bookingItems.startsAt,
+          endsAt: bookingItems.endsAt,
+          status: bookings.status,
+          customerName: sql<string>`coalesce(${customers.name}, ${bookings.guestName}, 'Khách lẻ')`,
+          customerPhone: sql<string | null>`coalesce(${customers.phone}, ${bookings.guestPhone})`,
+          roomName: rooms.name,
+          performerName: employees.fullName,
+        })
+        .from(bookingItems)
+        .innerJoin(bookings, eq(bookings.id, bookingItems.bookingId))
+        .leftJoin(customers, eq(customers.id, bookings.customerId))
+        .leftJoin(rooms, eq(rooms.id, bookingItems.roomId))
+        .leftJoin(employees, eq(employees.id, bookingItems.performerEmployeeId))
+        .where(
+          and(
+            eq(bookingItems.tenantId, user.tenantId),
+            gte(bookingItems.startsAt, from),
+            lt(bookingItems.startsAt, to),
+            // Dòng đã huỷ không còn giữ chỗ nên cũng không nên chiếm chỗ trên lưới.
+            isNull(bookingItems.cancelledAt),
+          ),
+        )
+        .orderBy(asc(bookingItems.startsAt)),
+      db
+        .select({
+          slot: tenantSettings.bookingSlotMinutes,
+          buffer: tenantSettings.bookingBufferMinutes,
+        })
+        .from(tenantSettings)
+        .where(eq(tenantSettings.tenantId, user.tenantId)),
+      /*
+       * Nạp sẵn cả bốn danh sách thay vì tra theo từng lần gõ. Spa này có 81
+       * khách, 27 dịch vụ, 1 nhân viên — gửi hết một lần rẻ hơn nhiều so với một
+       * vòng mạng cho mỗi ký tự lễ tân gõ vào ô tìm kiếm. Khi số khách lên hàng
+       * nghìn thì đổi sang tìm phía máy chủ.
+       */
+      db
+        .select({
+          id: customers.id,
+          code: customers.code,
+          name: customers.name,
+          phone: customers.phone,
+        })
+        .from(customers)
+        .where(and(eq(customers.tenantId, user.tenantId), eq(customers.isActive, true)))
+        .orderBy(asc(customers.name)),
+      db
+        .select({
+          id: products.id,
+          name: products.name,
+          durationMinutes: products.durationMinutes,
+          basePrice: products.basePrice,
+        })
+        .from(products)
+        .where(
+          and(
+            eq(products.tenantId, user.tenantId),
+            eq(products.kind, 'service'),
+            eq(products.isActive, true),
+          ),
+        )
+        .orderBy(asc(products.name)),
+      db
+        .select({ id: rooms.id, name: rooms.name })
+        .from(rooms)
+        .where(and(eq(rooms.tenantId, user.tenantId), eq(rooms.isActive, true)))
+        .orderBy(asc(rooms.sortOrder), asc(rooms.name)),
+      db
+        .select({ id: employees.id, name: employees.fullName })
+        .from(employees)
+        .where(and(eq(employees.tenantId, user.tenantId), eq(employees.status, 'working')))
+        .orderBy(asc(employees.fullName)),
+    ],
+  )
 
   /*
    * Chuyển `Date` sang chuỗi ISO trước khi truyền xuống client component: đi
@@ -100,6 +172,17 @@ export default async function PosCalendarPage({ searchParams }: PageProps<'/pos/
       view={view}
       fromISO={from.toISOString()}
       slotMinutes={settingsRow[0]?.slot ?? 30}
+      canBook={can(user, 'booking.manage')}
+      todayISO={todayISO}
+      nowMinute={nowMinuteVN}
+      options={{
+        customers: customerList,
+        services: serviceList,
+        rooms: roomList,
+        employees: employeeList,
+        bufferMinutes: settingsRow[0]?.buffer ?? 0,
+        slotMinutes: settingsRow[0]?.slot ?? 30,
+      }}
     />
   )
 }

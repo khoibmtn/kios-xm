@@ -31,27 +31,37 @@ const MESSAGES: Record<string, string> = {
 }
 
 /**
- * Trả về câu tiếng Việt nếu nhận ra lỗi, `null` nếu không — người gọi nên ném
- * tiếp để lỗi lạ không bị nuốt mất.
+ * Trả về câu tiếng Việt nếu nhận ra lỗi, `null` nếu không — người gọi nên ghi
+ * lại lỗi lạ thay vì nuốt mất.
+ *
+ * Phải đi dọc chuỗi `cause`: Drizzle **bọc** lỗi của `pg` lại, và lớp ngoài chỉ
+ * có `message` dạng "Failed query: insert into …" — không `code`, không
+ * `constraint`. Mã 23P01 và tên ràng buộc nằm ở `cause`. Bản đầu tiên của hàm
+ * này chỉ đọc lớp ngoài, nên mọi lần đặt trùng giờ đều rơi xuống câu chung
+ * chung; chỉ lộ ra khi bấm thử thật trên bản triển khai.
+ *
+ * Tiện thể: `message` của lớp ngoài chứa **nguyên câu lệnh và toàn bộ tham số**
+ * (xem `PROGRESS.md` 05/09) — thêm một lý do để không bao giờ đưa nó lên màn
+ * hình.
  */
 export function describeBookingError(error: unknown): string | null {
-  const e = error as PgError
-  if (!e || typeof e !== 'object') return null
+  let current: unknown = error
 
-  if (e.constraint && MESSAGES[e.constraint]) return MESSAGES[e.constraint]
+  for (let depth = 0; depth < 5 && current && typeof current === 'object'; depth++) {
+    const e = current as PgError & { cause?: unknown }
 
-  /*
-   * Drizzle không phải lúc nào cũng chuyển tiếp `constraint`; khi đó tên ràng
-   * buộc vẫn nằm trong câu thông báo gốc. Dò theo tên còn hơn trả về một câu
-   * chung chung không nói lên điều gì.
-   */
-  if (e.message) {
-    for (const [name, message] of Object.entries(MESSAGES)) {
-      if (e.message.includes(name)) return message
+    if (e.constraint && MESSAGES[e.constraint]) return MESSAGES[e.constraint]
+
+    if (e.message) {
+      for (const [name, message] of Object.entries(MESSAGES)) {
+        if (e.message.includes(name)) return message
+      }
     }
     if (e.code === '23P01') {
       return 'Khung giờ này đã có lịch khác. Đổi giờ, phòng hoặc kỹ thuật viên.'
     }
+
+    current = e.cause
   }
 
   return null
