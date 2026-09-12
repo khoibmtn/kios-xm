@@ -26,24 +26,31 @@ export async function readImportFile(file: File): Promise<ParseResult> {
     // bản browser bỏ hẳn phần đọc tệp của Node.
     const { default: readXlsxFile } = await import('read-excel-file/browser')
     return gridToParseResult(unwrapSheets(await readXlsxFile(file)))
-  } catch (e) {
+  } catch (libraryError) {
     /*
      * KiotViet xuất .xlsx theo **hai phương ngữ khác nhau** — cùng một tài
      * khoản, cùng một ngày. Danh sách hàng hoá và khách hàng dùng bảng chuỗi
      * chung (`xl/sharedStrings.xml`) và thẻ không tiền tố; danh sách nhân viên
-     * và bảng hoa hồng lại nhúng chuỗi thẳng vào ô, thẻ có tiền tố `<x:c>`, và
+     * và bảng hoa hồng thì ghi chuỗi thẳng vào `<x:v>`, thẻ có tiền tố `x:`, và
      * không có tệp sharedStrings nào. Thư viện đọc chỉ hiểu phương ngữ thứ
-     * nhất, gặp phương ngữ thứ hai thì ném lỗi không nói lên điều gì.
+     * nhất.
      *
-     * Nên câu báo ở đây không đổ cho "tệp .xls cũ" — đó là suy đoán sai và sẽ
-     * khiến người dùng đi lưu lại tệp một cách vô ích. Xem `TASKS.md` T-23.
+     * Trước đây chỗ này trả về một câu bảo người dùng đi lưu lại thành CSV.
+     * Giờ tự đọc lấy — xem `lib/catalog/xlsx-min.ts`.
      */
-    console.error('[readImportFile]', e)
-    return {
-      headers: [],
-      rows: [],
-      error:
-        'Chưa đọc được tệp Excel này — nó dùng một biến thể định dạng khác. Cách nhanh nhất: mở bằng Excel rồi lưu lại thành CSV UTF-8 và tải lên lại.',
+    try {
+      const { readXlsxMinimal } = await import('./xlsx-min')
+      return gridToParseResult(await readXlsxMinimal(await file.arrayBuffer()))
+    } catch (fallbackError) {
+      // Ghi cả hai: biết thư viện chuẩn hỏng vì gì mới lần ra được phương ngữ thứ ba.
+      console.error('[readImportFile] thư viện:', libraryError)
+      console.error('[readImportFile] dự phòng:', fallbackError)
+      return {
+        headers: [],
+        rows: [],
+        error:
+          'Chưa đọc được tệp Excel này. Cách nhanh nhất: mở bằng Excel rồi lưu lại thành CSV UTF-8 và tải lên lại.',
+      }
     }
   }
 }

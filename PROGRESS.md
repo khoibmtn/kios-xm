@@ -9,11 +9,11 @@
 
 | Mục | Giá trị |
 |---|---|
-| Milestone | **M0 và M1 đã đóng**, còn đúng 2 task lẻ: T-22, T-23 |
+| Milestone | **M0 và M1 đã đóng**, còn đúng 1 task lẻ: T-22 |
 | Ứng dụng đã deploy | **Có, đang chạy dữ liệu thật** — https://kios-xm.spa-xumay.workers.dev |
 | Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
 | Schema DB | **31 bảng trên Supabase**, migration mới nhất `drizzle/0010_fix_package_status_cast.sql`. `npm run db:check` báo khớp |
-| Số task DONE | 23 DONE / 2 TODO |
+| Số task DONE | 24 DONE / 1 TODO |
 | Dữ liệu thật đã vào | 207 hàng hoá · 38 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng**. 19 gói dịch vụ đã dựng xong đường nhập, **chờ anh Khôi đăng nhập để ghi** |
 
 **Bắt tay vào đâu.**
@@ -26,10 +26,10 @@
 2. **M2 — Lịch hẹn**, đúng thứ tự lộ trình. Lưu ý sẵn: 7 trong 26 buổi kia là
    buổi KiotViet đang giữ chỗ cho lịch hẹn (`migrated_reserved_sessions`), khi
    dựng lịch hẹn thì cần nối lại.
-3. **T-22 / T-23** — hai task lẻ còn sót, đều nhỏ.
+3. **T-22** — cấp tài khoản đăng nhập cho nhân viên. Lưu ý: bản xuất nhân viên của KiotViet **chỉ có 1 người** (NV000001), cần hỏi anh Khôi đó là đúng hay bộ lọc lại giấu bớt.
 
 **Việc đang dở:** chỉ bước bấm nút ở mục 1. Cây làm việc sạch, lint 0 lỗi,
-61/61 kiểm thử qua, `npm run db:check-packages` 19/19.
+70/70 kiểm thử qua, `npm run db:check-packages` 19/19.
 
 **Dữ liệu thật nằm ngoài git.** 15 tệp xuất từ KiotViet ở `.local-data/`
 (đã gitignore). Repo **công khai trên GitHub** — không bao giờ commit thư mục
@@ -65,6 +65,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 
 | 2026-09-07 | Claude Code | Gom 17 tệp xuất KiotViet vào `.local-data/` (đã gitignore) — chúng đang nằm trong `docs/` chưa được chặn, một lần `git add -A` là 81 khách hàng lên GitHub công khai. Nhập lại danh mục từ bản xuất **có kèm hàng ngừng kinh doanh**: 207 hàng hoá, 8 mã đúng trạng thái ngừng bán | `.gitignore`, `.local-data/` |
 
+| 2026-09-07 | Claude Code | **T-23 xong**: bộ đọc .xlsx riêng cho phương ngữ thứ hai của KiotViet — giải nén bằng `DecompressionStream('deflate-raw')` có sẵn trong nền tảng nên **không thêm thư viện nào**, và vẫn chạy phía trình duyệt nên gói Worker không đổi. Đọc đúng cả 4 bản xuất thật của spa, cả hai phương ngữ. Câu báo lỗi "hãy lưu lại thành CSV" biến mất | `lib/catalog/xlsx-min.ts` + test, `lib/catalog/import-file.ts` |
 | 2026-09-07 | Claude Code | **T-25 (M4) — gói/liệu trình khách đang giữ**: 3 bảng `customer_packages` + `customer_package_items` + `package_transactions` (sổ cái, theo `AGENTS.md` §3b.6), hai trigger giữ `used_sessions` và trạng thái gói khớp sổ cái. Màn hình "Gói, thẻ đã bán" + bộ nhập từ tệp KiotViet. `npm run db:check-packages` chứng minh **19/19**: 13 ca dữ liệu sai bị chặn, 6 ca dựng chuỗi giao dịch thật và trigger tính đúng (kể cả `adjust` dương, xoá giao dịch, và không lật ngược trạng thái đã huỷ). Màn hình khách hàng chuyển sang đọc **số buổi sống** thay vì ảnh chụp `migrated_remaining_sessions` | `drizzle/0009`, `drizzle/0010`, `lib/schema/customer-packages.ts`, `lib/packages/import-map.ts`, `app/admin/packages/`, `scripts/check-package-rules.ts` |
 | 2026-09-07 | Claude Code | **T-24 xong**: bảng `customers` + `customer_groups`, danh sách có lọc/xuất tệp, bộ nhập từ tệp KiotViet. **Đã nhập 81 khách thật** rồi đối chiếu ngược từng ô với tệp nguồn: 81/81 khớp cả ngày sinh, giao dịch đầu/cuối, lượt ghé, chi tiêu, buổi còn lại lẫn tên, điện thoại, giới tính, địa chỉ, trạng thái. Lược đồ tách rõ cột hồ sơ sống với cột `migrated_*` — ảnh chụp từ hệ cũ, không tự trừ khi bán hàng ở đây | `drizzle/0008_customers.sql`, `lib/schema/customers.ts`, `lib/customers/import-map.ts`, `app/admin/customers/` |
 
@@ -101,6 +102,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 | 2026-09-05 | **Nối chuỗi class Tailwind bằng tay là im lặng bỏ qua ý người gọi.** `${controlClass} ${props.className}` đặt `w-full` trước `w-28`, nhưng thứ tự trong thuộc tính `class` không quyết định gì — hai utility cùng nhóm có độ ưu tiên CSS như nhau nên thứ tự trong *biểu định kiểu* mới thắng. Kết quả: mọi ô hẹp (`Số buổi`, `Số lượng`, `Thời lượng`) đều giãn hết hàng và đẩy các ô sau xuống dòng, trông như lỗi bố cục ngẫu nhiên. Đã thêm `lib/utils.ts` với `cn()` (clsx + tailwind-merge) — hai gói này đã nằm sẵn trong `package.json` từ đầu mà chưa dùng. |
 | 2026-09-05 | **Suýt sai tiền gấp trăm lần.** `numeric` của Postgres trả về chuỗi `"500000.00"`; người Việt lại dùng dấu chấm để ngăn nghìn, nên hàm gỡ dấu chấm biến 500 nghìn thành 50 triệu. Màn hình vẫn hiện đúng "500.000" vì `Number("500000.00")` ở trình duyệt ra đúng — chỉ giá trị **ghi xuống cơ sở dữ liệu** mới sai. Đã sửa ở hai tầng: chuẩn hoá về số nguyên ngay khi đọc ra khỏi CSDL, và schema **từ chối thẳng** chuỗi có phần thập phân thay vì đoán ý. ⇒ Bất cứ chỗ nào chuỗi tiền đi qua ranh giới CSDL ↔ giao diện đều phải kiểm tra định dạng, đừng tin `Number()`. |
 | 2026-09-07 | **Hai thứ hỏng lặng lẽ vì kiểu dữ liệu quá rộng.** (1) `summaryRow` của `DataTable` được đặt thẳng vào một `<tr>`, tức hợp đồng ngầm là "đưa tôi các ô `<td>`" — nhưng kiểu khai báo là `ReactNode`, nên truyền một `<span>` vẫn qua được `tsc`, và trình duyệt lặng lẽ nhét nó vào cột đầu: câu tổng bị bó trong bề rộng cột "Mã khách", vỡ thành năm dòng. ⇒ Hợp đồng chỉ nằm trong đầu người viết thì kiểu phải nói hộ, hoặc ít nhất phải có chú thích ngay chỗ truyền vào. (2) ESLint đang quét cả `.open-next/` — **206 lỗi của mã sinh tự động** chôn mất 2 lỗi thật trong `admin-shell.tsx`, và tổng "22383 problems" khiến chẳng ai buồn đọc. Đã thêm `.open-next/**` và `.wrangler/**` vào `globalIgnores`; giờ còn đúng 11 dòng, đọc được. |
+| 2026-09-07 | **Phương ngữ .xlsx thứ hai hoá ra dễ hơn tưởng — nhưng chỉ sau khi mở tệp ra xem.** Ghi chú cũ đoán nó dùng "chuỗi nội tuyến `<x:is>`"; giải nén ra thì thấy khác hẳn: chuỗi nằm thẳng trong `<x:v>` với `t="str"`, và **ô lẫn dòng đều không có thuộc tính `r`** (toạ độ A1) nên vị trí cột chỉ suy được từ thứ tự. Chính chỗ thiếu `r` mới là thứ làm thư viện đọc bó tay. Tự viết mất ~150 dòng, không thêm thư viện nào vì `DecompressionStream('deflate-raw')` đã có sẵn trong trình duyệt lẫn Node. ⇒ Một ghi chú "đã biết nguyên nhân" viết từ suy đoán còn tệ hơn không có ghi chú, vì nó ngăn người sau đi mở tệp ra xem. |
 | 2026-09-07 | **Spa còn nợ khách 26 buổi, không phải 19.** Cột "SL còn lại" của KiotViet đã **trừ sẵn phần buổi đang giữ chỗ cho lịch hẹn**, nên hai gói bị đánh dấu "Đã dùng hết" dù khách chưa làm 7 buổi trong đó. Con số 19 đã nhập vào `customers.migrated_remaining_sessions` hôm trước chính là con số bị trừ ấy. Phát hiện được vì kiểm lại phép toán của chính tệp nguồn: `còn lại = tổng - đã dùng - đã trả` sai ở đúng 2 dòng, mà thêm `- đã đặt` thì khớp cả 19. ⇒ Một cột tên là "còn lại" không bảo đảm nó nghĩa là còn lại; **kiểm tra các cột số có cộng trừ ra nhau không** trước khi tin cột tổng hợp. |
 | 2026-09-07 | **Mười ba phép thử xanh vẫn không phát hiện được tính năng hỏng hoàn toàn.** Bộ kiểm tra ràng buộc của `customer_package_items` chặn đúng cả 13 trường hợp dữ liệu sai — nhưng `sync_customer_package_status()` gán `CASE … THEN 'used_up' ELSE 'active' END` vào cột enum, mà Postgres chốt kiểu CASE thành `text` khi cả hai nhánh là literal chưa định kiểu (một literal đứng một mình thì lại tự ép được). Trigger chạy AFTER INSERT, nên **mọi lần chèn một dòng hoàn toàn hợp lệ đều đổ**. ⇒ Phép thử "dữ liệu sai phải bị chặn" chỉ chứng minh được một nửa; phải có cả phép thử **dựng dữ liệu đúng rồi đối chiếu con số**. Bộ kiểm tra giờ có đủ hai nửa: 13 ca chặn + 6 ca dựng chuỗi giao dịch thật và soi số trigger tính ra. |
 | 2026-09-07 | **Cùng một phần mềm, ngày tháng cũng hai phương ngữ.** Bản xuất khách hàng cho ô ngày thật (đọc ra `Date`), bản xuất thẻ dịch vụ lại ghi **chuỗi `20/07/2026`**. Bộ đọc chỉ nhận ISO nên mọi ngày bán lặng lẽ thành rỗng — mà `sold_at` là NOT NULL, nên lần nhập thật sẽ đổ ở câu chèn với một thông báo chẳng liên quan gì tới ngày tháng. Bắt được nhờ **chạy thử khô trên tệp thật** trước khi ghi, chứ đọc code thì không thấy. ⇒ Trước mỗi lần nhập dữ liệu thật, in ra thứ *sắp* được ghi và nhìn từng cột một. |
