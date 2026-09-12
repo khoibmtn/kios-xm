@@ -46,6 +46,14 @@
 | T-24 | Hồ sơ khách hàng + nhập từ tệp (kéo sớm từ M4 để số buổi khách còn lại vào hệ thống trước, khỏi đối chiếu tay về sau) | Claude | DONE | Claude 07/09 | **Đã nhập thật 81 khách của spa** trên bản triển khai; đối chiếu ngược từng ô với tệp nguồn — 81/81 khách khớp cả 6 trường số/ngày lẫn 9 trường chữ. Số buổi còn lại (19 buổi, 5 khách) hiện thành cảnh báo trên danh sách |
 | T-25 | Gói/liệu trình khách đang giữ: `customer_packages` + `customer_package_items` + sổ cái `package_transactions`, màn hình "Gói, thẻ đã bán", nhập từ tệp KiotViet | Claude | DONE | Claude 07/09 | `npm run db:check-packages` báo **19/19**: 13 ca dữ liệu sai bị chặn ở tầng CSDL, 6 ca dựng chuỗi giao dịch thật và trigger tính đúng số buổi lẫn trạng thái. **Đã nhập thật 19 gói của spa** trên bản triển khai; đối chiếu ngược 19 gói × 10 trường với tệp nguồn — khớp hoàn toàn. Ba đường tính độc lập đều ra 26 buổi: cache trên item, tổng sổ cái (+124 −98), và truy vấn từ phía khách hàng |
 
+## Milestone M2 — Lịch hẹn
+
+| ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|
+| T-26 | Lược đồ lịch hẹn: `bookings`, `booking_items`, `booking_cancel_reasons`; chống trùng phòng và trùng nhân viên bằng `EXCLUDE USING gist` | Claude | DONE | Claude 12/09 | `npm run db:check-bookings` báo **21/21**: 14 ca dữ liệu sai bị chặn (có kiểm cả mã SQLSTATE để một bài kiểm sai cú pháp không "đạt" nhầm), 7 ca dựng dữ liệu đúng và phải đi lọt — quan trọng nhất là hai ca **liền kề** 9:00–10:00 và 10:00–11:00 |
+| T-27 | Lưới lịch hẹn: xem theo Ngày/Tuần, tuần bắt đầu thứ Hai, đường giờ hiện tại, khối chồng giờ tự chia làn | Claude | DONE | Claude 12/09 | Kiểm chứng trên bản triển khai với 3 lịch thử (2 cái chồng giờ): chia làn đúng, màu theo trạng thái, vị trí khớp vạch giờ. Dữ liệu thử đã xoá sạch |
+| T-28 | Panel đặt lịch 2 bước (chọn giờ → chi tiết), kéo–thả đổi giờ, lịch định kỳ | Claude | TODO | | Đặt được lịch thật từ giao diện; đặt trùng phòng thì hiện câu tiếng Việt chứ không phải lỗi Postgres |
+
 ## Backlog (mở chi tiết khi tới milestone)
 
 - **M2 Lịch hẹn** — lưới FullCalendar, panel đặt lịch 2 bước, kéo–thả, chống trùng (`EXCLUDE gist`), buffer 5', giới hạn theo ca, lý do huỷ, lịch định kỳ

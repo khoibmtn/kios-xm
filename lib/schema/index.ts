@@ -341,3 +341,6 @@ export * from './customers'
 
 // Gói/liệu trình khách đang giữ
 export * from './customer-packages'
+
+// Lịch hẹn
+export * from './bookings'

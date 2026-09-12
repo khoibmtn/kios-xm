@@ -18,6 +18,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:check": "tsx scripts/check-schema-sync.ts",
     "db:check-packages": "tsx scripts/check-package-rules.ts",
+    "db:check-bookings": "tsx scripts/check-booking-rules.ts",
     "test": "tsx --test \"lib/**/*.test.ts\""
   },
   "dependencies": {

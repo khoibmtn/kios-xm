@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     // Không bỏ qua thì 206 lỗi của nó nhấn chìm vài lỗi thật của mình.
     ".open-next/**",
     ".wrangler/**",
+    // Dữ liệu thật và mấy script dùng một lần quanh nó — không phải mã dự án.
+    ".local-data/**",
   ]),
 ]);
 
