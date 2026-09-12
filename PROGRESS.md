@@ -14,22 +14,22 @@
 | Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
 | Schema DB | **31 bảng trên Supabase**, migration mới nhất `drizzle/0010_fix_package_status_cast.sql`. `npm run db:check` báo khớp |
 | Số task DONE | 24 DONE / 1 TODO |
-| Dữ liệu thật đã vào | 207 hàng hoá · 38 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng**. 19 gói dịch vụ đã dựng xong đường nhập, **chờ anh Khôi đăng nhập để ghi** |
+| Dữ liệu thật đã vào | 207 hàng hoá · 37 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** · **19 gói liệu trình** (26 buổi spa còn nợ khách). Toàn bộ đã đối chiếu ngược từng ô với tệp nguồn |
 
 **Bắt tay vào đâu.**
 
-1. **Nhập nốt 19 gói dịch vụ** — toàn bộ đường nhập đã dựng và kiểm chứng xong,
-   chỉ còn bước bấm nút: mở `/admin/packages/import`, chọn
-   `.local-data/DanhSachTheDichVu_KV07092026-011240-4040.xlsx`, bấm "Nhập 19 gói".
-   Chạy thử khô trên tệp thật cho 19/19 dòng, **26 buổi** còn lại, tổng 53.052.198đ.
-   Lần trước dừng ở đây vì phiên đăng nhập hết hạn (JWT 12h).
-2. **M2 — Lịch hẹn**, đúng thứ tự lộ trình. Lưu ý sẵn: 7 trong 26 buổi kia là
-   buổi KiotViet đang giữ chỗ cho lịch hẹn (`migrated_reserved_sessions`), khi
-   dựng lịch hẹn thì cần nối lại.
-3. **T-22** — cấp tài khoản đăng nhập cho nhân viên. Lưu ý: bản xuất nhân viên của KiotViet **chỉ có 1 người** (NV000001), cần hỏi anh Khôi đó là đúng hay bộ lọc lại giấu bớt.
+1. **M2 — Lịch hẹn.** Đây là mảng lớn còn thiếu để spa dùng hàng ngày. Lưu ý
+   sẵn: 7 trong 26 buổi khách đang giữ là buổi KiotViet giữ chỗ cho lịch hẹn
+   (`customer_package_items.migrated_reserved_sessions`) — khi dựng lịch hẹn
+   thì nối lại.
+2. **T-22** — cấp tài khoản đăng nhập cho nhân viên. Đã kiểm chứng trên KiotViet:
+   spa **thật sự chỉ có 1 nhân viên** (NV000001), cả nhánh "Đã nghỉ" cũng rỗng.
+   Nhưng gói KiotViet có giới hạn số nhân viên, nên có thể anh Khôi chưa khai hết.
+3. **Hai câu hỏi đang chờ anh Khôi** — xem `.local-data/rasoat/`:
+   giá vốn gói tính sống hay đóng băng, và 7 buổi giữ chỗ có còn hiệu lực không.
 
-**Việc đang dở:** chỉ bước bấm nút ở mục 1. Cây làm việc sạch, lint 0 lỗi,
-70/70 kiểm thử qua, `npm run db:check-packages` 19/19.
+**Việc đang dở:** không có. Cây làm việc sạch, lint 0 lỗi, 70/70 kiểm thử qua,
+`npm run db:check-packages` 19/19.
 
 **Dữ liệu thật nằm ngoài git.** 15 tệp xuất từ KiotViet ở `.local-data/`
 (đã gitignore). Repo **công khai trên GitHub** — không bao giờ commit thư mục
