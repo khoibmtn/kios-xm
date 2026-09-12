@@ -68,6 +68,20 @@
 | T-35 | Bán thẳng từ lịch hẹn | Claude | DONE | Claude 12/09 | Bảng chi tiết lịch có nút sang `/pos/sale?booking=…`; giỏ hàng dựng sẵn dịch vụ và khách, chỉ lấy buổi **chưa nằm trên hoá đơn nào**. Đã bán thật: dòng hoá đơn trỏ ngược về LH000001 qua `booking_item_id` |
 | T-37 | Gán KTV/tư vấn cho từng dòng hoá đơn (`invoice_item_employees`) | Claude | TODO | | Một dòng có thể gán nhiều người với tỷ lệ đóng góp; hoa hồng chốt lúc bán |
 
+## Phát hiện từ đợt kiểm toán 12/09
+
+Đối chiếu tuyên bố trong tài liệu với mã nguồn thật. Năm sai lệch dưới đây
+không làm hỏng dữ liệu, nhưng chúng là **lời hứa trên giao diện mà phần mềm
+chưa giữ** — người dùng bật một công tắc rồi tưởng nó có tác dụng.
+
+| ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|
+| T-38 | Bốn thiết lập chỉ lưu chứ chưa thi hành: `limit_booking_to_shift`, `package_revenue_allocation_mode`, `costing_method`, `book_closed_until` | Claude | TODO | | Mỗi thiết lập hoặc được mã đọc và đổi hành vi thật, hoặc bị **ẩn khỏi màn hình cấu hình** kèm ghi chú "chờ M5/M6". Không để công tắc không nối vào đâu |
+| T-39 | Màn hình Sổ quỹ — mọi lần thanh toán đều ghi phiếu thu nhưng **không ai xem được** | Claude | TODO | | `/admin/cashbook`: danh sách phiếu thu/chi theo 3 quỹ, số dư từng quỹ, lọc theo thời gian, mở được từ menu |
+| T-40 | Menu Quản trị vẫn ghi "Lịch hẹn — sắp có" trong khi lưới lịch đã chạy ở `/pos/calendar` | Claude | TODO | | Mục menu trỏ đúng chỗ, hoặc nói rõ lịch hẹn nằm ở màn hình Thu ngân |
+| T-41 | Ba server action viết rồi không ai gọi: `clearFeatureAction`, `toggleProductActiveAction`, `suggestCodeAction` | Claude | TODO | | Hoặc nối vào giao diện, hoặc xoá. Mọi export của module `'use server'` đều là endpoint gọi được từ trình duyệt (`AGENTS.md` §3c) |
+| T-42 | `allocatePackageValue` được gọi mà **không truyền chế độ phân bổ**, nên thiết lập `package_revenue_allocation_mode` bị bỏ qua | Claude | TODO | | Đổi chế độ trong Cấu hình chung thì bảng phân bổ trên trang gói đổi theo |
+
 ## Backlog (mở chi tiết khi tới milestone)
 
 - **M2 Lịch hẹn** — lưới FullCalendar, panel đặt lịch 2 bước, kéo–thả, chống trùng (`EXCLUDE gist`), buffer 5', giới hạn theo ca, lý do huỷ, lịch định kỳ
