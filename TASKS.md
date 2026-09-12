@@ -54,7 +54,8 @@
 | T-26 | Lược đồ lịch hẹn: `bookings`, `booking_items`, `booking_cancel_reasons`; chống trùng phòng và trùng nhân viên bằng `EXCLUDE USING gist` | Claude | DONE | Claude 12/09 | `npm run db:check-bookings` báo **21/21**: 14 ca dữ liệu sai bị chặn (có kiểm cả mã SQLSTATE để một bài kiểm sai cú pháp không "đạt" nhầm), 7 ca dựng dữ liệu đúng và phải đi lọt — quan trọng nhất là hai ca **liền kề** 9:00–10:00 và 10:00–11:00 |
 | T-27 | Lưới lịch hẹn: xem theo Ngày/Tuần, tuần bắt đầu thứ Hai, đường giờ hiện tại, khối chồng giờ tự chia làn | Claude | DONE | Claude 12/09 | Kiểm chứng trên bản triển khai với 3 lịch thử (2 cái chồng giờ): chia làn đúng, màu theo trạng thái, vị trí khớp vạch giờ. Dữ liệu thử đã xoá sạch |
 | T-28 | Panel đặt lịch 2 bước (chọn giờ → chi tiết) | Claude | DONE | Claude 12/09 | **Đã đặt lịch thật trên bản triển khai**: chọn giờ theo buổi, tìm khách, thêm dịch vụ, tự tính giờ kết thúc. Đặt trùng KTV hiện đúng câu *"Kỹ thuật viên này đã có lịch khác trong khung giờ vừa chọn"*. Dữ liệu thử đã xoá |
-| T-29 | Kéo–thả đổi giờ, đổi trạng thái và huỷ lịch từ lưới, lịch định kỳ | Claude | TODO | | Kéo một khối sang giờ khác thì lưu ngay; huỷ lịch bắt chọn lý do |
+| T-29 | Kéo–thả đổi giờ, đổi trạng thái và huỷ lịch từ lưới | Claude | DONE | Claude 12/09 | Kiểm chứng đầu-cuối trên bản triển khai: đặt lịch → đổi sang "Đã tới" → huỷ với lý do "Khách đổi lịch" (trigger huỷ luôn dòng dịch vụ, nhật ký ghi đủ 3 bước). Kéo khối xuống 2 tiếng: 11:00–12:30 → 13:00–14:30, giữ nguyên thời lượng |
+| T-31 | Lịch hẹn định kỳ + lọc lưới theo KTV/phòng | Claude | TODO | | Đặt một lịch lặp hằng tuần sinh đủ các buổi; lọc lưới thu gọn đúng |
 
 ## Backlog (mở chi tiết khi tới milestone)
 

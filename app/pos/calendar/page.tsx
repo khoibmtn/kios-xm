@@ -2,6 +2,7 @@ import { and, asc, eq, gte, isNull, lt, sql } from 'drizzle-orm'
 import { requirePermission, can } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import {
+  bookingCancelReasons,
   bookingItems,
   bookings,
   customers,
@@ -70,8 +71,8 @@ export default async function PosCalendarPage({ searchParams }: PageProps<'/pos/
   const from = view === 'day' ? startOfDayVN(date) : mondayOf(date)
   const to = new Date(from.getTime() + (view === 'day' ? 1 : 7) * 86_400_000)
 
-  const [found, settingsRow, customerList, serviceList, roomList, employeeList] = await Promise.all(
-    [
+  const [found, settingsRow, customerList, serviceList, roomList, employeeList, reasonList] =
+    await Promise.all([
       db
         .select({
           id: bookingItems.id,
@@ -150,8 +151,17 @@ export default async function PosCalendarPage({ searchParams }: PageProps<'/pos/
         .from(employees)
         .where(and(eq(employees.tenantId, user.tenantId), eq(employees.status, 'working')))
         .orderBy(asc(employees.fullName)),
-    ],
-  )
+      db
+        .select({ id: bookingCancelReasons.id, name: bookingCancelReasons.name })
+        .from(bookingCancelReasons)
+        .where(
+          and(
+            eq(bookingCancelReasons.tenantId, user.tenantId),
+            eq(bookingCancelReasons.isActive, true),
+          ),
+        )
+        .orderBy(asc(bookingCancelReasons.sortOrder)),
+    ])
 
   /*
    * Chuyển `Date` sang chuỗi ISO trước khi truyền xuống client component: đi
@@ -175,6 +185,7 @@ export default async function PosCalendarPage({ searchParams }: PageProps<'/pos/
       canBook={can(user, 'booking.manage')}
       todayISO={todayISO}
       nowMinute={nowMinuteVN}
+      cancelReasons={reasonList}
       options={{
         customers: customerList,
         services: serviceList,

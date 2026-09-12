@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { BOOKING_STATUS_LABEL } from '@/lib/schema/bookings'
 import { BookingPanel, type BookingOptions } from './booking-panel'
+import { BookingDetail, type CancelReason } from './booking-detail'
+import { moveBookingItemAction } from './actions'
 
 export interface CalendarItem {
   id: string
@@ -77,6 +79,7 @@ export function CalendarGrid({
   canBook,
   todayISO,
   nowMinute,
+  cancelReasons,
 }: {
   items: CalendarItem[]
   date: string
@@ -87,9 +90,28 @@ export function CalendarGrid({
   canBook: boolean
   todayISO: string
   nowMinute: number
+  cancelReasons: CancelReason[]
 }) {
   const router = useRouter()
   const [panel, setPanel] = useState<{ date: string; minute: number | null } | null>(null)
+  const [detail, setDetail] = useState<CalendarItem | null>(null)
+  const [, startTransition] = useTransition()
+
+  /*
+   * Kéo khối sang giờ khác.
+   *
+   * Dùng pointer event thay vì HTML drag-and-drop: drag-and-drop gốc không
+   * chạy trên cảm ứng, mà quầy lễ tân đứng trước một máy tính bảng. `drag` giữ
+   * độ lệch đang kéo để vẽ khối theo ngón tay; con số thật chỉ ghi khi thả.
+   */
+  const [drag, setDrag] = useState<{ id: string; offsetMinutes: number } | null>(null)
+  const dragRef = useRef<{
+    id: string
+    startY: number
+    startMinute: number
+    moved: boolean
+  } | null>(null)
+  const [dragError, setDragError] = useState('')
   const from = useMemo(() => new Date(fromISO), [fromISO])
   const dayCount = view === 'day' ? 1 : 7
   const step = slotMinutes > 0 ? slotMinutes : 30
@@ -305,18 +327,64 @@ export function CalendarGrid({
                       return (
                         <div
                           key={item.id}
-                          onClick={(event) => event.stopPropagation()}
                           title={`${hhmm(s)}–${hhmm(e)} · ${item.customerName} · ${item.serviceName}${
                             item.roomName ? ` · ${item.roomName}` : ''
                           }${item.performerName ? ` · ${item.performerName}` : ''} · ${
                             BOOKING_STATUS_LABEL[item.status] ?? item.status
                           }`}
-                          className={cn(
-                            'absolute overflow-hidden rounded border px-1.5 py-0.5 text-[0.7rem] leading-tight',
-                            STATUS_STYLE[item.status] ?? STATUS_STYLE.scheduled,
-                          )}
+                          onPointerDown={
+                            canBook
+                              ? (event) => {
+                                  event.stopPropagation()
+                                  dragRef.current = {
+                                    id: item.id,
+                                    startY: event.clientY,
+                                    startMinute: s,
+                                    moved: false,
+                                  }
+                                  event.currentTarget.setPointerCapture(event.pointerId)
+                                }
+                              : undefined
+                          }
+                          onPointerMove={(event) => {
+                            const d = dragRef.current
+                            if (!d || d.id !== item.id) return
+                            const delta = (event.clientY - d.startY) / PX_PER_MINUTE
+                            // Dưới 4px coi như bấm, không phải kéo — ngón tay
+                            // không bao giờ đứng yên tuyệt đối.
+                            if (!d.moved && Math.abs(event.clientY - d.startY) < 4) return
+                            d.moved = true
+                            setDrag({ id: item.id, offsetMinutes: Math.round(delta / step) * step })
+                          }}
+                          onPointerUp={(event) => {
+                            const d = dragRef.current
+                            dragRef.current = null
+                            const offset = drag?.id === item.id ? drag.offsetMinutes : 0
+                            setDrag(null)
+                            if (!d) return
+                            if (!d.moved || offset === 0) {
+                              setDetail(item)
+                              return
+                            }
+                            event.stopPropagation()
+                            const next = new Date(
+                              new Date(item.startsAt).getTime() + offset * 60_000,
+                            )
+                            setDragError('')
+                            startTransition(async () => {
+                              const result = await moveBookingItemAction(
+                                item.id,
+                                next.toISOString(),
+                              )
+                              if (!result.ok) setDragError(result.error ?? 'Không dời được lịch.')
+                              router.refresh()
+                            })
+                          }}
+                          onClick={(event) => event.stopPropagation()}
                           style={{
-                            top: (s - gridFrom) * PX_PER_MINUTE,
+                            top:
+                              (s - gridFrom + (drag?.id === item.id ? drag.offsetMinutes : 0)) *
+                              PX_PER_MINUTE,
                             height,
                             left: `calc(${(lane / lanes) * 100}% + 2px)`,
                             width: `calc(${100 / lanes}% - 4px)`,
@@ -345,9 +413,26 @@ export function CalendarGrid({
         )}
       </div>
 
+      {dragError && (
+        <p
+          role="alert"
+          className="text-danger bg-danger/10 shrink-0 px-3 py-2 text-sm"
+          onClick={() => setDragError('')}
+        >
+          {dragError}
+        </p>
+      )}
+
       <div className="border-border text-muted-foreground shrink-0 border-t px-3 py-1.5 text-sm">
         Tổng số {items.length} lịch hẹn
       </div>
+
+      <BookingDetail
+        item={detail}
+        reasons={cancelReasons}
+        canManage={canBook}
+        onClose={() => setDetail(null)}
+      />
 
       {panel && (
         <BookingPanel

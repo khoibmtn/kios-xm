@@ -9,19 +9,23 @@
 
 | Mục | Giá trị |
 |---|---|
-| Milestone | M0 và M1 đã đóng. **Đang làm M2 — Lịch hẹn**: đặt được lịch thật rồi; còn kéo–thả và huỷ lịch (T-29) |
+| Milestone | M0 và M1 đã đóng. **Đang làm M2 — Lịch hẹn**: đặt / sửa / huỷ lịch đã dùng được; còn lịch định kỳ và bộ lọc lưới (T-31) |
 | Ứng dụng đã deploy | **Có, đang chạy dữ liệu thật** — https://kios-xm.spa-xumay.workers.dev |
 | Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
 | Schema DB | **34 bảng trên Supabase**, migration mới nhất `drizzle/0011_bookings.sql`. `npm run db:check` báo khớp |
-| Số task DONE | 28 DONE / 2 TODO |
+| Số task DONE | 30 DONE / 3 TODO |
 | Dữ liệu thật đã vào | **1 nhân viên** (Hương) · 207 hàng hoá · 37 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** · **19 gói liệu trình** (26 buổi spa còn nợ khách). Toàn bộ đã đối chiếu ngược từng ô với tệp nguồn |
 
 **Bắt tay vào đâu.**
 
-1. **T-29 — kéo–thả đổi giờ, huỷ lịch từ lưới.** Đặt lịch đã chạy đầu-cuối;
-   còn thiếu sửa và huỷ. `cancelBookingAction` đã viết, chưa có giao diện gọi.
+1. **M3 — Bán hàng tại quầy.** Đây là mảng lớn cuối cùng để spa chạy trọn một
+   ngày: lịch hẹn đã đặt/sửa/huỷ được, nhưng chưa thu được tiền. Lúc dựng nhớ
+   `AGENTS.md` §3b.2 — mỗi dịch vụ trên hoá đơn phải trỏ về một `booking_item`
+   đã có, không tạo bản ghi rời.
    Lưu ý sẵn: 7 trong 26 buổi khách đang giữ là buổi KiotViet giữ chỗ cho lịch
    hẹn (`customer_package_items.migrated_reserved_sessions`) — nối lại khi đặt.
+   `package_transactions` đã có sẵn cột `booking_item_id` và `invoice_item_id`
+   chờ từ migration 0009.
    ⚠️ **Chưa có phòng nào** ở `/admin/rooms` — nhưng đã kiểm tra: KiotViet cũng
    không có phòng nào (cả bộ lọc "Tất cả"), nên spa chưa bao giờ dùng tính năng
    này. Chống trùng phòng chỉ có tác dụng khi anh Khôi quyết định khai phòng.
@@ -68,6 +72,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 
 | 2026-09-07 | Claude Code | Gom 17 tệp xuất KiotViet vào `.local-data/` (đã gitignore) — chúng đang nằm trong `docs/` chưa được chặn, một lần `git add -A` là 81 khách hàng lên GitHub công khai. Nhập lại danh mục từ bản xuất **có kèm hàng ngừng kinh doanh**: 207 hàng hoá, 8 mã đúng trạng thái ngừng bán | `.gitignore`, `.local-data/` |
 
+| 2026-09-12 | Claude Code | **T-29 xong — lịch hẹn dùng được cả vòng đời**: bấm vào lịch mở bảng chi tiết, đổi trạng thái theo bước khách đi qua (Chưa tới → Đã tới → Đang làm → Hoàn thành), huỷ bắt chọn lý do trong 5 lý do mặc định. Kéo khối sang giờ khác bằng pointer event (chạy được trên máy tính bảng, khác với drag-and-drop gốc của HTML). Kiểm chứng đầu-cuối trên bản triển khai rồi xoá sạch dữ liệu thử | `app/pos/calendar/booking-detail.tsx`, `calendar-grid.tsx`, `actions.ts` |
 | 2026-09-12 | Claude Code | **Dọn nốt dữ liệu mẫu để "chuyển nhà" xong hẳn**: bộ nhập nhân viên từ tệp KiotViet (T-30) — đã nhập thật, NV000001 thành **Hương** với số điện thoại và chi nhánh đúng, `user_id` của chủ spa không bị đụng tới. Bỏ hồ sơ "Lễ tân demo". Gộp hàm đọc ngày dùng chung cho cả ba bộ nhập, vá lỗi tiềm ẩn ở bộ nhập khách hàng | `lib/employees/import-map.ts`, `app/admin/employees/import/`, `lib/catalog/import-csv.ts` |
 | 2026-09-12 | Claude Code | **T-28 xong**: panel đặt lịch 2 bước — chọn giờ theo buổi (sáng/chiều/tối/đêm) như KiotViet, tìm khách trong 81 hồ sơ, thêm nhiều dịch vụ có buffer giữa các buổi, tự tính giờ kết thúc. Đã đặt lịch thật trên bản triển khai và thử đặt trùng: hiện đúng câu tiếng Việt. Sửa hai lỗi lộ ra lúc bấm thử (xem Sự cố) | `app/pos/calendar/booking-panel.tsx`, `actions.ts`, `lib/bookings/conflicts.ts` + test |
 | 2026-09-12 | Claude Code | **M2 khởi động — nền lịch hẹn**: 3 bảng mới, chống trùng phòng và trùng nhân viên bằng `EXCLUDE USING gist` (không ở tầng ứng dụng — hai lễ tân bấm cùng lúc là chuyện thật), trigger huỷ phiếu tự huỷ các dòng và nhả chỗ. Lưới Ngày/Tuần chạy trên bản triển khai, khối chồng giờ tự chia làn. `npm run db:check-bookings` 21/21 | `drizzle/0011_bookings.sql`, `lib/schema/bookings.ts`, `lib/bookings/`, `app/pos/calendar/`, `scripts/check-booking-rules.ts` |

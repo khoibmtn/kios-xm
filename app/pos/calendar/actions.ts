@@ -250,3 +250,107 @@ export async function cancelBookingAction(
     return { ok: false, error: 'Không huỷ được lịch hẹn. Chi tiết đã được ghi lại.' }
   }
 }
+
+/**
+ * Đổi trạng thái phiếu hẹn — "khách đã tới", "đang làm", "hoàn thành"…
+ *
+ * Không nhận `cancelled` ở đây: huỷ là việc khác, bắt buộc có lý do, và đi qua
+ * `cancelBookingAction`. Gộp hai thứ vào một hàm thì sớm muộn cũng có chỗ gọi
+ * quên truyền lý do rồi bị ràng buộc `bookings_cancel_needs_reason` từ chối
+ * bằng một lỗi khó hiểu.
+ */
+export async function setBookingStatusAction(
+  bookingId: string,
+  status: 'scheduled' | 'confirmed' | 'arrived' | 'in_progress' | 'done' | 'no_show',
+): Promise<BookingResult> {
+  let user
+  try {
+    user = await assertPermission('booking.manage')
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, error: 'Bạn không có quyền sửa lịch.' }
+    throw e
+  }
+
+  try {
+    const updated = await db
+      .update(bookings)
+      .set({ status })
+      .where(and(eq(bookings.tenantId, user.tenantId), eq(bookings.id, bookingId)))
+      .returning({ code: bookings.code })
+
+    if (updated.length === 0) return { ok: false, error: 'Không tìm thấy lịch hẹn.' }
+
+    await writeAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      entity: 'booking',
+      entityId: bookingId,
+      action: 'update',
+      after: { status },
+      reason: `Đổi trạng thái lịch ${updated[0].code} → ${status}`,
+    })
+    revalidatePath('/pos/calendar')
+    return { ok: true, code: updated[0].code }
+  } catch (e) {
+    const friendly = describeBookingError(e)
+    if (friendly) return { ok: false, error: friendly }
+    console.error('[setBookingStatusAction]', e instanceof Error ? e.message : String(e))
+    return { ok: false, error: 'Không đổi được trạng thái. Chi tiết đã được ghi lại.' }
+  }
+}
+
+/**
+ * Dời một dòng dịch vụ sang giờ khác, giữ nguyên thời lượng — dùng cho kéo–thả
+ * trên lưới.
+ *
+ * Thời lượng suy từ chính dòng đang có chứ không tính lại từ danh mục: dịch vụ
+ * có thể đã đổi thời lượng kể từ lúc đặt, mà khách thì được hẹn theo giờ cũ.
+ */
+export async function moveBookingItemAction(
+  bookingItemId: string,
+  startsAt: string,
+): Promise<BookingResult> {
+  let user
+  try {
+    user = await assertPermission('booking.manage')
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { ok: false, error: 'Bạn không có quyền sửa lịch.' }
+    throw e
+  }
+
+  const start = new Date(startsAt)
+  if (Number.isNaN(start.getTime())) return { ok: false, error: 'Giờ mới không hợp lệ.' }
+
+  try {
+    const [current] = await db
+      .select({ startsAt: bookingItems.startsAt, endsAt: bookingItems.endsAt })
+      .from(bookingItems)
+      .where(and(eq(bookingItems.tenantId, user.tenantId), eq(bookingItems.id, bookingItemId)))
+
+    if (!current) return { ok: false, error: 'Không tìm thấy dòng dịch vụ.' }
+
+    const durationMs = current.endsAt.getTime() - current.startsAt.getTime()
+    await db
+      .update(bookingItems)
+      .set({ startsAt: start, endsAt: new Date(start.getTime() + durationMs) })
+      .where(and(eq(bookingItems.tenantId, user.tenantId), eq(bookingItems.id, bookingItemId)))
+
+    await writeAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      entity: 'booking_item',
+      entityId: bookingItemId,
+      action: 'update',
+      before: { startsAt: current.startsAt.toISOString() },
+      after: { startsAt: start.toISOString() },
+      reason: 'Kéo đổi giờ trên lưới lịch hẹn',
+    })
+    revalidatePath('/pos/calendar')
+    return { ok: true }
+  } catch (e) {
+    const friendly = describeBookingError(e)
+    if (friendly) return { ok: false, error: friendly }
+    console.error('[moveBookingItemAction]', e instanceof Error ? e.message : String(e))
+    return { ok: false, error: 'Không dời được lịch. Chi tiết đã được ghi lại.' }
+  }
+}
