@@ -44,15 +44,16 @@
 | T-22 | Cấp tài khoản đăng nhập cho nhân viên + gán vai trò theo chi nhánh (`user_branch_roles`) | Claude | TODO | | Tạo tài khoản từ hồ sơ nhân viên, đặt mật khẩu ban đầu, đăng nhập được đúng quyền |
 | T-16 | Nhập/Xuất Excel hàng hoá & khách hàng | Antigravity | DONE | Claude 07/09 | Đọc thẳng .xlsx (đọc trong trình duyệt nên không đụng gói Worker) lẫn CSV, xem trước + khoe cột nào đọc/bỏ, nhập theo lô. **Đã nhập thật 207 dòng danh mục KiotViet của spa**: 38 nhóm hàng, 95 thương hiệu, 20 đơn vị, 11 buổi trong gói, 183 định mức NVL — định mức khớp đúng giá vốn KiotViet ghi. Phần khách hàng: xem T-24 |
 | T-24 | Hồ sơ khách hàng + nhập từ tệp (kéo sớm từ M4 để số buổi khách còn lại vào hệ thống trước, khỏi đối chiếu tay về sau) | Claude | DONE | Claude 07/09 | **Đã nhập thật 81 khách của spa** trên bản triển khai; đối chiếu ngược từng ô với tệp nguồn — 81/81 khách khớp cả 6 trường số/ngày lẫn 9 trường chữ. Số buổi còn lại (19 buổi, 5 khách) hiện thành cảnh báo trên danh sách |
+| T-25 | Gói/liệu trình khách đang giữ: `customer_packages` + `customer_package_items` + sổ cái `package_transactions`, màn hình "Gói, thẻ đã bán", nhập từ tệp KiotViet | Claude | DONE | Claude 07/09 | `npm run db:check-packages` báo **19/19**: 13 ca dữ liệu sai bị chặn ở tầng CSDL, 6 ca dựng chuỗi giao dịch thật và trigger tính đúng số buổi lẫn trạng thái. Đường nhập chạy thử khô trên tệp thật: 19/19 dòng, 26 buổi còn lại. **Còn chờ bấm nút nhập thật** |
 
 ## Backlog (mở chi tiết khi tới milestone)
 
 - **M2 Lịch hẹn** — lưới FullCalendar, panel đặt lịch 2 bước, kéo–thả, chống trùng (`EXCLUDE gist`), buffer 5', giới hạn theo ca, lý do huỷ, lịch định kỳ
 - **M3 POS** — multi-cart, picker 4 loại hàng, gán KTV/tư vấn/phòng/giờ, thanh toán (tiền mặt/CK/QR/thẻ/điểm), in hoá đơn
-- **M4 Gói & thẻ** — bán, trừ buổi, trừ tiền, hạn dùng, màn hình "Thẻ & gói đã bán".
-  Hồ sơ khách đã dựng sớm (T-24); còn thiếu `customer_packages` để **19 buổi khách
-  đang giữ** trở thành số dư sống thay vì ảnh chụp (`migrated_remaining_sessions`),
-  và nhập 19 gói đã bán từ `DanhSachTheDichVu`
+- **M4 Gói & thẻ** — nền móng đã xong sớm (T-24 hồ sơ khách, T-25 gói + sổ cái
+  `package_transactions`). Còn lại của milestone này: **bán** gói/thẻ tại POS,
+  **trừ buổi** khi làm dịch vụ (ghi `use` vào sổ cái), thẻ trả trước theo tiền
+  (`kind='card'` — spa hiện chưa bán thẻ nào), hạn dùng và gia hạn
 - **M5 Kho** — NCC, nhập hàng, trả hàng nhập, kiểm kho, xuất huỷ/dùng, định mức NVL, thẻ kho, giá vốn trung bình
 - **M6 Nhân viên & lương** — ca, lịch làm việc, chấm công, bảng hoa hồng (2 vai trò), bảng lương
 - **M7 Sổ quỹ & báo cáo** — phiếu thu/chi 3 loại quỹ, 10 báo cáo, dashboard

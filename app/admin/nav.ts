@@ -56,7 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Khách hàng',
     items: [
       { label: 'Danh sách khách hàng', href: '/admin/customers', permission: 'customer.view', matchPrefix: true },
-      { label: 'Gói, thẻ đã bán', permission: 'package.view' },
+      { label: 'Gói, thẻ đã bán', href: '/admin/packages', permission: 'package.view', matchPrefix: true },
       { label: 'Voucher, khuyến mại', permission: 'settings.manage' },
     ],
   },

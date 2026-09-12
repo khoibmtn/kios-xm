@@ -22,7 +22,7 @@ export interface CustomerRow {
   isActive: boolean
   migratedVisits: number | null
   migratedTotalSpent: string | null
-  migratedRemainingSessions: number | null
+  remainingSessions: number
   lastVisitAt: string | null
 }
 
@@ -54,7 +54,7 @@ export function CustomerTable({ rows, canManage }: { rows: CustomerRow[]; canMan
         if (status === 'active' && !r.isActive) return false
         if (status === 'inactive' && r.isActive) return false
         if (source && r.source !== source) return false
-        if (hasPackage === 'yes' && !(r.migratedRemainingSessions ?? 0)) return false
+        if (hasPackage === 'yes' && !r.remainingSessions) return false
         if (search) {
           const haystack = [r.code, r.name, r.phone, r.note].filter(Boolean).join(' ')
           if (!matchesSearch(haystack, search)) return false
@@ -100,7 +100,7 @@ export function CustomerTable({ rows, canManage }: { rows: CustomerRow[]; canMan
         cell: (c) => <span className="tabular">{formatMoney(c.getValue<string>())}</span>,
       },
       {
-        accessorKey: 'migratedRemainingSessions',
+        accessorKey: 'remainingSessions',
         header: 'Buổi còn lại',
         cell: (c) => {
           const n = c.getValue<number>()
@@ -116,7 +116,7 @@ export function CustomerTable({ rows, canManage }: { rows: CustomerRow[]; canMan
     [],
   )
 
-  const owedSessions = filtered.reduce((s, r) => s + (r.migratedRemainingSessions ?? 0), 0)
+  const owedSessions = filtered.reduce((s, r) => s + r.remainingSessions, 0)
   const activeFilterCount =
     (status !== 'active' ? 1 : 0) + (source ? 1 : 0) + (hasPackage !== 'all' ? 1 : 0)
 
@@ -149,7 +149,7 @@ export function CustomerTable({ rows, canManage }: { rows: CustomerRow[]; canMan
             <>
               {' · '}
               <strong className="text-warning font-medium">{owedSessions} buổi</strong> spa còn nợ
-              khách theo số liệu chuyển từ hệ cũ
+              khách trong các gói đang giữ
             </>
           )}
         </td>
@@ -225,7 +225,7 @@ export function CustomerTable({ rows, canManage }: { rows: CustomerRow[]; canMan
           { header: 'Nguồn khách', value: (r) => r.source },
           { header: 'Lượt ghé', value: (r) => r.migratedVisits },
           { header: 'Đã chi tiêu', value: (r) => r.migratedTotalSpent },
-          { header: 'Buổi còn lại', value: (r) => r.migratedRemainingSessions },
+          { header: 'Buổi còn lại', value: (r) => r.remainingSessions },
           { header: 'Giao dịch cuối', value: (r) => formatDate(r.lastVisitAt) },
         ],
       }}
@@ -233,9 +233,7 @@ export function CustomerTable({ rows, canManage }: { rows: CustomerRow[]; canMan
         <div className="space-y-1">
           <div className="flex items-start justify-between gap-3">
             <span className="font-medium">{r.name}</span>
-            {(r.migratedRemainingSessions ?? 0) > 0 && (
-              <Badge tone="warning">{r.migratedRemainingSessions} buổi</Badge>
-            )}
+            {r.remainingSessions > 0 && <Badge tone="warning">{r.remainingSessions} buổi</Badge>}
           </div>
           <p className="text-muted-foreground text-sm">
             {r.code}

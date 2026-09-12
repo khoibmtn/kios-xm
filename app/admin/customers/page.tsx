@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 import { requirePermission, can } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { customerGroups, customers } from '@/lib/schema'
@@ -46,7 +46,22 @@ export default async function CustomersPage() {
       isActive: customers.isActive,
       migratedVisits: customers.migratedVisits,
       migratedTotalSpent: customers.migratedTotalSpent,
-      migratedRemainingSessions: customers.migratedRemainingSessions,
+      /*
+       * Buổi còn lại đọc **sống từ gói khách đang giữ**, không đọc
+       * `customers.migrated_remaining_sessions` nữa.
+       *
+       * Cột kia là ảnh chụp lúc chuyển hệ và nó còn thấp hơn sự thật: KiotViet
+       * đã trừ đi phần buổi giữ chỗ cho lịch hẹn, nên nó ghi 19 trong khi spa
+       * thật sự còn nợ khách 26 buổi. Để hai con số cùng tồn tại là dựng lại
+       * đúng cái bẫy "một cột hai nghĩa" của `categories.path`.
+       */
+      remainingSessions: sql<number>`(
+        select coalesce(sum(i.sessions + i.bonus_sessions - i.used_sessions), 0)::int
+        from customer_package_items i
+        join customer_packages p on p.id = i.customer_package_id
+        where p.customer_id = ${customers.id}
+          and p.status in ('active', 'used_up')
+      )`,
       lastVisitAt: customers.lastVisitAt,
     })
     .from(customers)

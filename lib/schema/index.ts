@@ -338,3 +338,6 @@ export * from './rooms'
 
 // Khách hàng
 export * from './customers'
+
+// Gói/liệu trình khách đang giữ
+export * from './customer-packages'
