@@ -344,3 +344,6 @@ export * from './customer-packages'
 
 // Lịch hẹn
 export * from './bookings'
+
+// Hoá đơn, thanh toán, sổ quỹ
+export * from './invoices'

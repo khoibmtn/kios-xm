@@ -9,23 +9,24 @@
 
 | Mục | Giá trị |
 |---|---|
-| Milestone | M0 và M1 đã đóng. **Đang làm M2 — Lịch hẹn**: đặt / sửa / huỷ lịch đã dùng được; còn lịch định kỳ và bộ lọc lưới (T-31) |
+| Milestone | M0, M1 đóng. **M2 lịch hẹn và M3 bán hàng đã chạy được một vòng đầy đủ** — đặt lịch, bán hàng, thu tiền, trừ buổi từ gói. Còn huỷ hoá đơn có bút toán ngược (T-34) |
 | Ứng dụng đã deploy | **Có, đang chạy dữ liệu thật** — https://kios-xm.spa-xumay.workers.dev |
 | Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
-| Schema DB | **34 bảng trên Supabase**, migration mới nhất `drizzle/0011_bookings.sql`. `npm run db:check` báo khớp |
-| Số task DONE | 30 DONE / 3 TODO |
+| Schema DB | **41 bảng trên Supabase**, migration mới nhất `drizzle/0012_invoices.sql`. `npm run db:check` báo khớp |
+| Số task DONE | 32 DONE / 5 TODO |
 | Dữ liệu thật đã vào | **1 nhân viên** (Hương) · 207 hàng hoá · 37 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** · **19 gói liệu trình** (26 buổi spa còn nợ khách). Toàn bộ đã đối chiếu ngược từng ô với tệp nguồn |
 
 **Bắt tay vào đâu.**
 
-1. **M3 — Bán hàng tại quầy.** Đây là mảng lớn cuối cùng để spa chạy trọn một
-   ngày: lịch hẹn đã đặt/sửa/huỷ được, nhưng chưa thu được tiền. Lúc dựng nhớ
-   `AGENTS.md` §3b.2 — mỗi dịch vụ trên hoá đơn phải trỏ về một `booking_item`
-   đã có, không tạo bản ghi rời.
-   Lưu ý sẵn: 7 trong 26 buổi khách đang giữ là buổi KiotViet giữ chỗ cho lịch
-   hẹn (`customer_package_items.migrated_reserved_sessions`) — nối lại khi đặt.
-   `package_transactions` đã có sẵn cột `booking_item_id` và `invoice_item_id`
-   chờ từ migration 0009.
+1. **T-34 — huỷ hoá đơn có bút toán ngược.** Đây là lỗ hổng lớn nhất còn lại:
+   `package_transactions.invoice_item_id` **không có khoá ngoại** (cột có từ
+   migration 0009, lúc chưa có bảng hoá đơn), nên xoá hoá đơn **không hoàn buổi
+   lại cho khách**. Lúc dọn dữ liệu thử phải xoá tay sổ cái trước. Cách đúng:
+   huỷ hoá đơn ghi một `adjust` dương vào sổ cái buổi và một bút toán chi đảo
+   phiếu thu — không xoá dòng nào.
+2. **T-35 — bán thẳng từ lịch hẹn.** `invoice_items.booking_item_id` đã có ràng
+   buộc UNIQUE chặn bán một buổi hai lần, nhưng chưa có đường đi từ lưới lịch
+   sang màn bán hàng.
    ⚠️ **Chưa có phòng nào** ở `/admin/rooms` — nhưng đã kiểm tra: KiotViet cũng
    không có phòng nào (cả bộ lọc "Tất cả"), nên spa chưa bao giờ dùng tính năng
    này. Chống trùng phòng chỉ có tác dụng khi anh Khôi quyết định khai phòng.
@@ -72,6 +73,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 
 | 2026-09-07 | Claude Code | Gom 17 tệp xuất KiotViet vào `.local-data/` (đã gitignore) — chúng đang nằm trong `docs/` chưa được chặn, một lần `git add -A` là 81 khách hàng lên GitHub công khai. Nhập lại danh mục từ bản xuất **có kèm hàng ngừng kinh doanh**: 207 hàng hoá, 8 mã đúng trạng thái ngừng bán | `.gitignore`, `.local-data/` |
 
+| 2026-09-12 | Claude Code | **M3 xong vòng đầu — spa chạy được trọn một ngày**: 7 bảng hoá đơn/thanh toán/sổ quỹ, màn hình bán hàng, và bất biến **mỗi thanh toán sinh một phiếu thu sổ quỹ** do trigger giữ. Đã bán thật HD000001 gồm 1 buổi từ gói + 1 sản phẩm: doanh thu 55.000 tách bạch với giá trị buổi 1.333.333, phiếu thu `TTHD000001` tự sinh, buổi khách 6 → 5. `npm run db:check-invoices` 21/21 | `drizzle/0012_invoices.sql`, `lib/schema/invoices.ts`, `app/pos/sale/`, `scripts/check-invoice-rules.ts` |
 | 2026-09-12 | Claude Code | **T-29 xong — lịch hẹn dùng được cả vòng đời**: bấm vào lịch mở bảng chi tiết, đổi trạng thái theo bước khách đi qua (Chưa tới → Đã tới → Đang làm → Hoàn thành), huỷ bắt chọn lý do trong 5 lý do mặc định. Kéo khối sang giờ khác bằng pointer event (chạy được trên máy tính bảng, khác với drag-and-drop gốc của HTML). Kiểm chứng đầu-cuối trên bản triển khai rồi xoá sạch dữ liệu thử | `app/pos/calendar/booking-detail.tsx`, `calendar-grid.tsx`, `actions.ts` |
 | 2026-09-12 | Claude Code | **Dọn nốt dữ liệu mẫu để "chuyển nhà" xong hẳn**: bộ nhập nhân viên từ tệp KiotViet (T-30) — đã nhập thật, NV000001 thành **Hương** với số điện thoại và chi nhánh đúng, `user_id` của chủ spa không bị đụng tới. Bỏ hồ sơ "Lễ tân demo". Gộp hàm đọc ngày dùng chung cho cả ba bộ nhập, vá lỗi tiềm ẩn ở bộ nhập khách hàng | `lib/employees/import-map.ts`, `app/admin/employees/import/`, `lib/catalog/import-csv.ts` |
 | 2026-09-12 | Claude Code | **T-28 xong**: panel đặt lịch 2 bước — chọn giờ theo buổi (sáng/chiều/tối/đêm) như KiotViet, tìm khách trong 81 hồ sơ, thêm nhiều dịch vụ có buffer giữa các buổi, tự tính giờ kết thúc. Đã đặt lịch thật trên bản triển khai và thử đặt trùng: hiện đúng câu tiếng Việt. Sửa hai lỗi lộ ra lúc bấm thử (xem Sự cố) | `app/pos/calendar/booking-panel.tsx`, `actions.ts`, `lib/bookings/conflicts.ts` + test |
@@ -115,6 +117,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 | 2026-09-07 | **Hai thứ hỏng lặng lẽ vì kiểu dữ liệu quá rộng.** (1) `summaryRow` của `DataTable` được đặt thẳng vào một `<tr>`, tức hợp đồng ngầm là "đưa tôi các ô `<td>`" — nhưng kiểu khai báo là `ReactNode`, nên truyền một `<span>` vẫn qua được `tsc`, và trình duyệt lặng lẽ nhét nó vào cột đầu: câu tổng bị bó trong bề rộng cột "Mã khách", vỡ thành năm dòng. ⇒ Hợp đồng chỉ nằm trong đầu người viết thì kiểu phải nói hộ, hoặc ít nhất phải có chú thích ngay chỗ truyền vào. (2) ESLint đang quét cả `.open-next/` — **206 lỗi của mã sinh tự động** chôn mất 2 lỗi thật trong `admin-shell.tsx`, và tổng "22383 problems" khiến chẳng ai buồn đọc. Đã thêm `.open-next/**` và `.wrangler/**` vào `globalIgnores`; giờ còn đúng 11 dòng, đọc được. |
 | 2026-09-07 | **Đối chiếu 237 mặt hàng với bảng hoa hồng KiotViet — giá bán khớp 100%, giá vốn gói thì không so được.** 204/237 mã khớp (33 mã còn lại đều mang hậu tố `{DEL}`, tức đã xoá khỏi danh mục). Giá bán: **204/204 khớp tuyệt đối**. Giá vốn: 193/204 khớp, 11 mã lệch — **toàn bộ là gói liệu trình**, app ghi 0 còn KiotViet ghi một con số dương. Đào tiếp thì thấy đây không phải lỗi nhập: giá vốn gói của KiotViet **không bằng** định mức nguyên vật liệu × số buổi — chỉ 4/11 gói khớp, 7 gói lệch từ 9.450đ tới 451.500đ. Nghĩa là con số của KiotViet là ảnh chụp lúc cấu hình gói, còn định mức thì đã đổi từ đó. ⇒ **Chưa thêm cột `cost` cho gói** — làm vậy là dựng nguồn sự thật thứ hai cạnh `service_materials`. Cần anh Khôi quyết: giá vốn gói nên tính sống từ định mức hiện hành, hay đóng băng lúc bán như `allocated_per_session`. |
 | 2026-09-07 | **Phương ngữ .xlsx thứ hai hoá ra dễ hơn tưởng — nhưng chỉ sau khi mở tệp ra xem.** Ghi chú cũ đoán nó dùng "chuỗi nội tuyến `<x:is>`"; giải nén ra thì thấy khác hẳn: chuỗi nằm thẳng trong `<x:v>` với `t="str"`, và **ô lẫn dòng đều không có thuộc tính `r`** (toạ độ A1) nên vị trí cột chỉ suy được từ thứ tự. Chính chỗ thiếu `r` mới là thứ làm thư viện đọc bó tay. Tự viết mất ~150 dòng, không thêm thư viện nào vì `DecompressionStream('deflate-raw')` đã có sẵn trong trình duyệt lẫn Node. ⇒ Một ghi chú "đã biết nguyên nhân" viết từ suy đoán còn tệ hơn không có ghi chú, vì nó ngăn người sau đi mở tệp ra xem. |
+| 2026-09-12 | **Một cột chờ sẵn không phải là một liên kết.** `package_transactions.invoice_item_id` được thêm từ migration 0009 để "chờ hoá đơn", nhưng nó chỉ là `uuid` trần — không khoá ngoại. Nên khi xoá hoá đơn thử, buổi khách **không tự hoàn lại**: tổng buổi đứng ở 25 thay vì về 26, và tôi phải xoá tay sổ cái trước. Không ai báo lỗi gì cả. ⇒ Cột dự phòng cho bảng chưa tồn tại thì lúc bảng ấy ra đời **phải quay lại gắn khoá ngoại và quyết định hành vi khi xoá** — nếu không nó là một liên kết chỉ tồn tại trong đầu người viết. Đã ghi thành T-34; cách đúng không phải xoá mà là bút toán ngược. |
 | 2026-09-12 | **Hai lỗi chỉ lộ ra khi bấm thử thật, không lỗi nào build hay test bắt được.** (1) `describeBookingError` không nhận ra lỗi nào cả, vì **Drizzle bọc lỗi của `pg` lại**: lớp ngoài chỉ có `message` kiểu "Failed query: insert into …", còn `code: 23P01` và tên ràng buộc nằm ở `cause`. Mọi lần đặt trùng giờ đều rơi xuống câu chung chung "Chi tiết đã được ghi lại" — đúng thứ tôi viết cả một module để tránh. Đã đi dọc chuỗi `cause`, và chép đúng hình dạng lỗi thật vào bài kiểm. (2) Đặt trùng giờ **để lại một phiếu hẹn rỗng**: phiếu ghi xong rồi mới tới dòng dịch vụ bị từ chối, mà hai câu chèn không nằm trong một giao dịch. Phiếu rỗng vô hình trên lưới (lưới đi từ `booking_items`) nên nó nằm đó ăn mất mã LH mà không ai biết. Bắt được vì lúc dọn dữ liệu thử thấy **xoá ra ba phiếu trong khi chỉ đặt thành công một** — con số không khớp mới là thứ tố giác. |
 | 2026-09-12 | **Một bài kiểm "đạt" vì chính nó sai cú pháp.** Phép thử chống trùng nhân viên báo ✓ ngay lần chạy đầu — nhưng mã SQLSTATE in kèm là **42601 (syntax_error)**, không phải 23P01. Câu SQL của bài kiểm có hai mệnh đề `FROM`; nó bị Postgres từ chối vì hỏng, và `mustReject` hiểu thành "ràng buộc đã chặn". Nếu không in mã lỗi thì đây là một dấu ✓ giả nằm im trong báo cáo mãi mãi. ⇒ `mustReject` giờ **kiểm cả mã lỗi**: chỉ 23P01/23514/23505/23503 mới được tính là đạt. Cùng lúc đó, nhóm kiểm thử trùng phòng bị bỏ qua lặng lẽ vì spa chưa khai phòng nào — mà một nhóm bị bỏ qua trông y hệt một nhóm đã đạt khi người ta chỉ liếc dòng tổng kết. Bài kiểm giờ tự dựng phòng tạm rồi rollback. |
 | 2026-09-12 | **Chống trùng lịch không được đặt ở tầng ứng dụng.** Hai lễ tân cùng đặt một phòng vào một khung giờ trong cùng một giây là chuyện bình thường ở quầy, và mọi phép kiểm "SELECT rồi INSERT" đều có khe hở giữa hai câu lệnh. Đã dùng `EXCLUDE USING gist` với `tstzrange(starts_at, ends_at, '[)')` — **nửa mở ở cuối**, để hai ca liền kề 9:00–10:00 và 10:00–11:00 vẫn đặt được; đóng cả hai đầu thì lễ tân sẽ phải lùi một phút cho vừa lòng máy, mỗi ngày. Buffer 5 phút cố tình **không** nằm trong ràng buộc: nó là quy tắc gợi ý giờ cho dịch vụ kế tiếp trong cùng phiếu, không phải luật cấm hai khách khác nhau dùng phòng liền nhau. |

@@ -57,6 +57,15 @@
 | T-29 | Kéo–thả đổi giờ, đổi trạng thái và huỷ lịch từ lưới | Claude | DONE | Claude 12/09 | Kiểm chứng đầu-cuối trên bản triển khai: đặt lịch → đổi sang "Đã tới" → huỷ với lý do "Khách đổi lịch" (trigger huỷ luôn dòng dịch vụ, nhật ký ghi đủ 3 bước). Kéo khối xuống 2 tiếng: 11:00–12:30 → 13:00–14:30, giữ nguyên thời lượng |
 | T-31 | Lịch hẹn định kỳ + lọc lưới theo KTV/phòng | Claude | TODO | | Đặt một lịch lặp hằng tuần sinh đủ các buổi; lọc lưới thu gọn đúng |
 
+## Milestone M3 — Bán hàng tại quầy
+
+| ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|
+| T-32 | Lược đồ hoá đơn: `invoices`, `invoice_items`, `invoice_item_employees`, `payments`, `cash_accounts`, `cash_transactions`, `sale_channels` | Claude | DONE | Claude 12/09 | `npm run db:check-invoices` báo **21/21**: 14 ca dữ liệu sai bị chặn (có kiểm mã SQLSTATE), 7 ca dựng thật — trong đó bất biến **mỗi thanh toán sinh đúng một phiếu thu sổ quỹ**, hai cache `paid_amount` và `balance` bám theo, và xoá thanh toán thì cả ba lùi theo |
+| T-33 | Màn hình bán hàng: chọn hàng 4 loại, giỏ hàng, giảm giá dòng và hoá đơn, thu tiền 3 phương thức, **dùng buổi từ gói** | Claude | DONE | Claude 12/09 | **Đã bán thật HD000001**: 1 buổi từ gói + 1 sản phẩm. Doanh thu ghi 55.000, giá trị buổi 1.333.333 tách riêng (§3b.5), phiếu thu `TTHD000001` tự sinh, buổi khách 6 → 5. Dữ liệu thử đã xoá, buổi về lại 26 |
+| T-34 | Huỷ hoá đơn có bút toán ngược: hoàn buổi về gói, đảo phiếu thu | Claude | TODO | | Huỷ một hoá đơn đã dùng buổi thì buổi quay lại gói và sổ quỹ có bút toán ngược, không xoá dòng cũ |
+| T-35 | Gán KTV/tư vấn cho từng dòng hoá đơn (`invoice_item_employees`) + bán từ lịch hẹn | Claude | TODO | | Bấm một lịch hẹn đã tới thì sang thẳng màn bán hàng với dòng dịch vụ đã gắn `booking_item_id` |
+
 ## Backlog (mở chi tiết khi tới milestone)
 
 - **M2 Lịch hẹn** — lưới FullCalendar, panel đặt lịch 2 bước, kéo–thả, chống trùng (`EXCLUDE gist`), buffer 5', giới hạn theo ca, lý do huỷ, lịch định kỳ
