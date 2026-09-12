@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, type PaginationState } from '@/components/data-table/data-table'
 import { Badge, FilterGroup, RadioFilter, SelectFilter } from '@/components/data-table/filters'
@@ -65,7 +65,11 @@ export function EmployeeTable({ rows, canManage }: { rows: EmployeeRow[]; canMan
   const columns = useMemo<ColumnDef<EmployeeRow, unknown>[]>(
     () => [
       { accessorKey: 'code', header: 'Mã nhân viên' },
-      { accessorKey: 'clockCode', header: 'Mã chấm công', cell: (c) => c.getValue<string>() ?? '—' },
+      {
+        accessorKey: 'clockCode',
+        header: 'Mã chấm công',
+        cell: (c) => c.getValue<string>() ?? '—',
+      },
       {
         accessorKey: 'fullName',
         header: 'Tên nhân viên',
@@ -76,8 +80,16 @@ export function EmployeeTable({ rows, canManage }: { rows: EmployeeRow[]; canMan
         header: 'Số điện thoại',
         cell: (c) => <span className="tabular">{formatPhone(c.getValue<string>())}</span>,
       },
-      { accessorKey: 'positionName', header: 'Chức danh', cell: (c) => c.getValue<string>() ?? '—' },
-      { accessorKey: 'departmentName', header: 'Phòng ban', cell: (c) => c.getValue<string>() ?? '—' },
+      {
+        accessorKey: 'positionName',
+        header: 'Chức danh',
+        cell: (c) => c.getValue<string>() ?? '—',
+      },
+      {
+        accessorKey: 'departmentName',
+        header: 'Phòng ban',
+        cell: (c) => c.getValue<string>() ?? '—',
+      },
       { accessorKey: 'branchName', header: 'Chi nhánh', cell: (c) => c.getValue<string>() ?? '—' },
       {
         accessorKey: 'hiredAt',
@@ -111,13 +123,22 @@ export function EmployeeTable({ rows, canManage }: { rows: EmployeeRow[]; canMan
       onRowClick={canManage ? (r) => router.push(`/admin/employees/${r.id}/edit`) : undefined}
       actions={
         canManage ? (
-          <Link
-            href="/admin/employees/new"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium"
-          >
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">Thêm nhân viên</span>
-          </Link>
+          <>
+            <Link
+              href="/admin/employees/import"
+              className="border-border hover:bg-muted inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium"
+            >
+              <Upload className="size-4" />
+              <span className="hidden sm:inline">Nhập file</span>
+            </Link>
+            <Link
+              href="/admin/employees/new"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium"
+            >
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">Thêm nhân viên</span>
+            </Link>
+          </>
         ) : undefined
       }
       search={{
@@ -175,7 +196,10 @@ export function EmployeeTable({ rows, canManage }: { rows: EmployeeRow[]; canMan
           { header: 'Phòng ban', value: (r) => r.departmentName },
           { header: 'Chi nhánh', value: (r) => r.branchName },
           { header: 'Ngày vào làm', value: (r) => formatDate(r.hiredAt) },
-          { header: 'Trạng thái', value: (r) => (r.status === 'working' ? 'Đang làm việc' : 'Đã nghỉ') },
+          {
+            header: 'Trạng thái',
+            value: (r) => (r.status === 'working' ? 'Đang làm việc' : 'Đã nghỉ'),
+          },
         ],
       }}
       mobileCard={(r) => (

@@ -1,4 +1,5 @@
 import type { ParseResult } from '@/lib/catalog/import-csv'
+import { parseImportDate } from '@/lib/catalog/import-csv'
 
 /**
  * Ánh xạ tệp "Danh sách thẻ dịch vụ" (gói/liệu trình khách đã mua) của
@@ -148,33 +149,8 @@ const money = (raw: string) => {
   return trimmed.replace(/[^\d]/g, '')
 }
 
-const ISO_RE = /^\d{4}-\d{2}-\d{2}$/
-const DMY_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-
-/**
- * Đọc ngày từ ô KiotViet, trả về `YYYY-MM-DD` hoặc chuỗi rỗng.
- *
- * Phải chấp nhận **hai dạng** vì cùng một phần mềm xuất hai kiểu khác nhau:
- * bản xuất khách hàng cho ô ngày thật (bộ đọc tệp đã đổi sang ISO trước khi
- * tới đây), còn bản xuất thẻ dịch vụ lại ghi **chuỗi `20/07/2026`**. Chỉ nhận
- * ISO thì mọi ngày bán của tệp thẻ dịch vụ lặng lẽ thành rỗng — mà `sold_at`
- * là cột NOT NULL, nên cả lần nhập đổ ở câu chèn với một thông báo chẳng liên
- * quan gì tới định dạng ngày.
- *
- * Giá trị không phải ngày thì về chuỗi rỗng, nhờ vậy dùng được luôn cho "HSD"
- * — giá trị thật là "Vô thời hạn", không cần nhánh riêng.
- */
-function toDate(raw: string): string {
-  const v = raw.trim()
-  if (ISO_RE.test(v)) return v
-  const dmy = DMY_RE.exec(v)
-  if (!dmy) return ''
-  const [, d, m, y] = dmy
-  const day = Number(d)
-  const month = Number(m)
-  if (month < 1 || month > 12 || day < 1 || day > 31) return ''
-  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
-}
+/** Đọc ngày — xem `parseImportDate` trong `lib/catalog/import-csv.ts`. */
+const toDate = parseImportDate
 
 /**
  * "Dịch vụ trong gói" luôn có hậu tố đơn vị trong ngoặc ở CUỐI câu, ví dụ

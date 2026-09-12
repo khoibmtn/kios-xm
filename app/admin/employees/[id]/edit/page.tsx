@@ -17,11 +17,7 @@ export default async function EditEmployeePage({
   const user = await requirePermission('employee.manage')
   const { id } = await params
 
-  const [employee] = await db
-    .select()
-    .from(employees)
-    .where(eq(employees.id, id))
-    .limit(1)
+  const [employee] = await db.select().from(employees).where(eq(employees.id, id)).limit(1)
 
   if (!employee || employee.tenantId !== user.tenantId) notFound()
 

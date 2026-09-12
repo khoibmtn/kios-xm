@@ -158,14 +158,11 @@ export function EmployeeForm({ initial, departments, positions, branches }: Prop
   const [positionOptions, setPositionOptions] = useState(positions)
 
   const action = saveEmployeeAction.bind(null, initial.id ?? null)
-  const [state, formAction] = useActionState<ActionState, FormData>(
-    async (prev, fd) => {
-      const result = await action(prev, fd)
-      if (result.savedId) router.push('/admin/employees')
-      return result
-    },
-    {},
-  )
+  const [state, formAction] = useActionState<ActionState, FormData>(async (prev, fd) => {
+    const result = await action(prev, fd)
+    if (result.savedId) router.push('/admin/employees')
+    return result
+  }, {})
 
   const set = <K extends keyof EmployeeFormData>(key: K, value: EmployeeFormData[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -385,8 +382,8 @@ export function EmployeeForm({ initial, departments, positions, branches }: Prop
       <section className="border-border bg-card space-y-3 rounded-lg border p-5">
         <h2 className="font-semibold">Trạng thái làm việc</h2>
         <p className="text-muted-foreground -mt-1 text-sm">
-          Nhân viên đã nghỉ vẫn giữ nguyên lịch sử dịch vụ và hoa hồng — chỉ không
-          còn xuất hiện khi xếp lịch hay chọn người thực hiện.
+          Nhân viên đã nghỉ vẫn giữ nguyên lịch sử dịch vụ và hoa hồng — chỉ không còn xuất hiện khi
+          xếp lịch hay chọn người thực hiện.
         </p>
         <div className="flex flex-wrap gap-2">
           {(['working', 'left'] as const).map((s) => (

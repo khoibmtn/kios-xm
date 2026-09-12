@@ -1,4 +1,5 @@
 import type { ParseResult } from '@/lib/catalog/import-csv'
+import { parseImportDate } from '@/lib/catalog/import-csv'
 
 /**
  * Ánh xạ tệp danh sách khách hàng của KiotViet sang dữ liệu của phần mềm này.
@@ -151,8 +152,12 @@ function parseGender(raw: string): 'male' | 'female' | 'other' | null {
 /** Chỉ giữ số; "1.234.567" và "1234567" đều về "1234567". */
 const money = (raw: string) => raw.replace(/[^\d]/g, '')
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-const toDate = (raw: string) => (DATE_RE.test(raw.trim()) ? raw.trim() : '')
+/*
+ * Dùng hàm chung thay vì bản chỉ nhận ISO như trước: KiotViet xuất ngày theo
+ * hai dạng, và bản cũ sẽ **âm thầm làm rỗng** ngày sinh nếu tệp rơi vào dạng
+ * `dd/MM/yyyy` — mất dữ liệu mà không báo gì.
+ */
+const toDate = parseImportDate
 
 export function toCustomerRows(parsed: ParseResult): CustomerImportPlan {
   const mapping = mapCustomerHeaders(parsed.headers)

@@ -13,8 +13,8 @@
 | Ứng dụng đã deploy | **Có, đang chạy dữ liệu thật** — https://kios-xm.spa-xumay.workers.dev |
 | Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
 | Schema DB | **34 bảng trên Supabase**, migration mới nhất `drizzle/0011_bookings.sql`. `npm run db:check` báo khớp |
-| Số task DONE | 27 DONE / 2 TODO |
-| Dữ liệu thật đã vào | 207 hàng hoá · 37 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** · **19 gói liệu trình** (26 buổi spa còn nợ khách). Toàn bộ đã đối chiếu ngược từng ô với tệp nguồn |
+| Số task DONE | 28 DONE / 2 TODO |
+| Dữ liệu thật đã vào | **1 nhân viên** (Hương) · 207 hàng hoá · 37 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** · **19 gói liệu trình** (26 buổi spa còn nợ khách). Toàn bộ đã đối chiếu ngược từng ô với tệp nguồn |
 
 **Bắt tay vào đâu.**
 
@@ -22,10 +22,9 @@
    còn thiếu sửa và huỷ. `cancelBookingAction` đã viết, chưa có giao diện gọi.
    Lưu ý sẵn: 7 trong 26 buổi khách đang giữ là buổi KiotViet giữ chỗ cho lịch
    hẹn (`customer_package_items.migrated_reserved_sessions`) — nối lại khi đặt.
-   ⚠️ Hai thứ spa cần khai trước khi lịch hẹn dùng được thật:
-   **chưa có phòng nào** ở `/admin/rooms` (chống trùng phòng chỉ có tác dụng khi
-   lịch được gán phòng), và **danh sách nhân viên vẫn là dữ liệu seed**
-   ("Chủ spa", "Lễ tân demo") chứ chưa phải "Hương" thật từ KiotViet.
+   ⚠️ **Chưa có phòng nào** ở `/admin/rooms` — nhưng đã kiểm tra: KiotViet cũng
+   không có phòng nào (cả bộ lọc "Tất cả"), nên spa chưa bao giờ dùng tính năng
+   này. Chống trùng phòng chỉ có tác dụng khi anh Khôi quyết định khai phòng.
 2. **T-22** — cấp tài khoản đăng nhập cho nhân viên. Đã kiểm chứng trên KiotViet:
    spa **thật sự chỉ có 1 nhân viên** (NV000001), cả nhánh "Đã nghỉ" cũng rỗng.
    Nhưng gói KiotViet có giới hạn số nhân viên, nên có thể anh Khôi chưa khai hết.
@@ -69,6 +68,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 
 | 2026-09-07 | Claude Code | Gom 17 tệp xuất KiotViet vào `.local-data/` (đã gitignore) — chúng đang nằm trong `docs/` chưa được chặn, một lần `git add -A` là 81 khách hàng lên GitHub công khai. Nhập lại danh mục từ bản xuất **có kèm hàng ngừng kinh doanh**: 207 hàng hoá, 8 mã đúng trạng thái ngừng bán | `.gitignore`, `.local-data/` |
 
+| 2026-09-12 | Claude Code | **Dọn nốt dữ liệu mẫu để "chuyển nhà" xong hẳn**: bộ nhập nhân viên từ tệp KiotViet (T-30) — đã nhập thật, NV000001 thành **Hương** với số điện thoại và chi nhánh đúng, `user_id` của chủ spa không bị đụng tới. Bỏ hồ sơ "Lễ tân demo". Gộp hàm đọc ngày dùng chung cho cả ba bộ nhập, vá lỗi tiềm ẩn ở bộ nhập khách hàng | `lib/employees/import-map.ts`, `app/admin/employees/import/`, `lib/catalog/import-csv.ts` |
 | 2026-09-12 | Claude Code | **T-28 xong**: panel đặt lịch 2 bước — chọn giờ theo buổi (sáng/chiều/tối/đêm) như KiotViet, tìm khách trong 81 hồ sơ, thêm nhiều dịch vụ có buffer giữa các buổi, tự tính giờ kết thúc. Đã đặt lịch thật trên bản triển khai và thử đặt trùng: hiện đúng câu tiếng Việt. Sửa hai lỗi lộ ra lúc bấm thử (xem Sự cố) | `app/pos/calendar/booking-panel.tsx`, `actions.ts`, `lib/bookings/conflicts.ts` + test |
 | 2026-09-12 | Claude Code | **M2 khởi động — nền lịch hẹn**: 3 bảng mới, chống trùng phòng và trùng nhân viên bằng `EXCLUDE USING gist` (không ở tầng ứng dụng — hai lễ tân bấm cùng lúc là chuyện thật), trigger huỷ phiếu tự huỷ các dòng và nhả chỗ. Lưới Ngày/Tuần chạy trên bản triển khai, khối chồng giờ tự chia làn. `npm run db:check-bookings` 21/21 | `drizzle/0011_bookings.sql`, `lib/schema/bookings.ts`, `lib/bookings/`, `app/pos/calendar/`, `scripts/check-booking-rules.ts` |
 | 2026-09-07 | Claude Code | **T-23 xong**: bộ đọc .xlsx riêng cho phương ngữ thứ hai của KiotViet — giải nén bằng `DecompressionStream('deflate-raw')` có sẵn trong nền tảng nên **không thêm thư viện nào**, và vẫn chạy phía trình duyệt nên gói Worker không đổi. Đọc đúng cả 4 bản xuất thật của spa, cả hai phương ngữ. Câu báo lỗi "hãy lưu lại thành CSV" biến mất | `lib/catalog/xlsx-min.ts` + test, `lib/catalog/import-file.ts` |

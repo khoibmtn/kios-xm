@@ -20,7 +20,9 @@ const blankToUndefined = z
   .transform((v) => (v === '' ? undefined : v))
 
 const optionalText = (max: number, message?: string) =>
-  blankToUndefined.refine((v) => v === undefined || v.length <= max, message ?? `Tối đa ${max} ký tự`).optional()
+  blankToUndefined
+    .refine((v) => v === undefined || v.length <= max, message ?? `Tối đa ${max} ký tự`)
+    .optional()
 
 const optionalId = blankToUndefined
   .refine((v) => v === undefined || UUID_RE.test(v), 'Giá trị không hợp lệ')

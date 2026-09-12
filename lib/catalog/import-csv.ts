@@ -202,11 +202,11 @@ const KIND_ALIASES: Record<string, ProductKind> = {
   service: 'service',
   'gói dịch vụ': 'package',
   'gói dịch vụ, liệu trình': 'package',
-  'gói': 'package',
+  gói: 'package',
   'liệu trình': 'package',
   package: 'package',
   'thẻ tài khoản': 'card',
-  'thẻ': 'card',
+  thẻ: 'card',
   card: 'card',
 }
 
@@ -428,4 +428,28 @@ export function toImportRows(parsed: ParseResult): ImportPlan {
   }
 
   return { rows, problems, missingColumns: [], usedColumns, ignoredColumns }
+}
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const DMY_DATE_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+
+/**
+ * Đọc ngày từ một ô của KiotViet, trả về `YYYY-MM-DD` hoặc chuỗi rỗng.
+ *
+ * Phải chấp nhận **hai dạng** vì cùng một phần mềm xuất hai kiểu: bản xuất
+ * khách hàng cho ô ngày thật (bộ đọc tệp đã đổi sang ISO trước khi tới đây),
+ * còn bản xuất thẻ dịch vụ và nhân viên lại ghi chuỗi `20/07/2026`. Chỉ nhận
+ * ISO thì ngày lặng lẽ thành rỗng — không báo lỗi gì, chỉ mất dữ liệu.
+ *
+ * Giá trị không phải ngày trả về chuỗi rỗng, nhờ vậy dùng được cả cho cột
+ * "HSD" mà giá trị thật là "Vô thời hạn".
+ */
+export function parseImportDate(raw: string): string {
+  const v = raw.trim()
+  if (ISO_DATE_RE.test(v)) return v
+  const dmy = DMY_DATE_RE.exec(v)
+  if (!dmy) return ''
+  const [, d, m, y] = dmy
+  if (Number(m) < 1 || Number(m) > 12 || Number(d) < 1 || Number(d) > 31) return ''
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
 }
