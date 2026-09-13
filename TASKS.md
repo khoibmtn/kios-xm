@@ -76,11 +76,21 @@ chưa giữ** — người dùng bật một công tắc rồi tưởng nó có 
 
 | ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
 |---|---|---|---|---|---|
-| T-38 | Bốn thiết lập chỉ lưu chứ chưa thi hành: `limit_booking_to_shift`, `package_revenue_allocation_mode`, `costing_method`, `book_closed_until` | Claude | TODO | | Mỗi thiết lập hoặc được mã đọc và đổi hành vi thật, hoặc bị **ẩn khỏi màn hình cấu hình** kèm ghi chú "chờ M5/M6". Không để công tắc không nối vào đâu |
+| T-38 | Bốn thiết lập chỉ lưu chứ chưa thi hành — nay tách làm hai nhóm theo [`ADR-004`](./docs/decisions/ADR-004-platform-and-shops.md) §2 | Claude | TODO | | **(a)** `costing_method` + `package_revenue_allocation_mode` thuộc quản trị viên nền tảng, mà `/platform` chưa có ⇒ **ẩn khỏi màn hình chủ gian hàng**, ghi chú "do quản trị viên đặt". **(b)** `limit_booking_to_shift` + `book_closed_until` thuộc chủ gian hàng ⇒ **nối vào mã thật**: bật giới hạn ca thì đặt lịch ngoài ca bị chặn; khoá sổ tới ngày nào thì không ghi được chứng từ trước ngày đó. Nghiệm thu: **đổi thiết lập thì thấy hành vi khác đi**, không phải "lưu được" |
 | T-39 | Màn hình Sổ quỹ — mọi lần thanh toán đều ghi phiếu thu nhưng **không ai xem được** | Claude | TODO | | `/admin/cashbook`: danh sách phiếu thu/chi theo 3 quỹ, số dư từng quỹ, lọc theo thời gian, mở được từ menu |
 | T-40 | Menu Quản trị vẫn ghi "Lịch hẹn — sắp có" trong khi lưới lịch đã chạy ở `/pos/calendar` | Claude | TODO | | Mục menu trỏ đúng chỗ, hoặc nói rõ lịch hẹn nằm ở màn hình Thu ngân |
 | T-41 | Ba server action viết rồi không ai gọi: `clearFeatureAction`, `toggleProductActiveAction`, `suggestCodeAction` | Claude | TODO | | Hoặc nối vào giao diện, hoặc xoá. Mọi export của module `'use server'` đều là endpoint gọi được từ trình duyệt (`AGENTS.md` §3c) |
 | T-42 | `allocatePackageValue` được gọi mà **không truyền chế độ phân bổ**, nên thiết lập `package_revenue_allocation_mode` bị bỏ qua | Claude | TODO | | Đổi chế độ trong Cấu hình chung thì bảng phân bổ trên trang gói đổi theo |
+
+## Sự cố sao lưu 13/09 — đã xử lý, còn việc đuôi
+
+| ID | Việc | Agent | Status | Owner | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|
+| T-43 | Sao lưu hỏng vì token Drive hết hạn; kết nối lại thì bỏ rơi thư mục cũ | Claude | DONE | Claude 13/09 | `ensureRootFolder` tìm trước rồi mới tạo (6 kiểm thử, trả code cũ về thì 4/6 đỏ); `drive_root_folder_id` trỏ lại thư mục chứa 9 bản sao lưu; job sao lưu bỏ secret riêng, xin token ngắn hạn qua `/api/cron/drive-token`. Chạy thật trên GitHub Actions: tải lên xong, khôi phục thử khớp 5/5 bảng |
+| T-44 | Thẻ "Sao lưu & lưu trữ" trên Tổng quan + cảnh báo trước khi hỏng | Claude | DONE | Claude 13/09 | Migration 0014 ghi mốc sao lưu thành công; thẻ cảnh báo trước 2 ngày khi token sắp hết hạn và báo đỏ khi quá 2 đêm không có bản nào. 12 kiểm thử, có ca dựng lại đúng mốc thời gian của sự cố thật |
+| T-45 | Mua tên miền riêng để publish OAuth app, dứt hạn 7 ngày | Any | BLOCKED | Chờ anh Khôi | `*.workers.dev` đã thử và **không xác minh được** (xem `ADR-002 §2.6`). Có tên miền riêng thì khai `/privacy` + `/terms`, xác minh, Publish, rồi đặt `GOOGLE_OAUTH_PUBLISHED=true` — phần đếm ngược trên Tổng quan tự ẩn |
+| T-46 | Bỏ giả định "chỉ có một gian hàng" trong các kịch bản chạy ngoài app | Claude | TODO | | `scripts/backup.ts`, `verify-backup.ts`, `check-backup-storage.ts` và `/api/cron/drive-token` đang lấy `tenants.limit(1)`. Phải chạy đúng với nhiều gian hàng (`ADR-004` §3) |
+| T-47 | Bề mặt `/platform` cho quản trị viên nền tảng | Claude | TODO | | Bảng `platform_admins` riêng, đăng nhập riêng, danh sách gian hàng, đặt tham số từng gian (gói, hạn mức, cờ tính năng, `costing_method`, `package_revenue_allocation_mode`). Thay mặt gian hàng phải ghi nhật ký cả lúc vào lẫn lúc ra. **Không** thêm cờ nào lên `users` (`ADR-004` §1) |
 
 ## Backlog (mở chi tiết khi tới milestone)
 
@@ -101,7 +111,7 @@ chưa giữ** — người dùng bật một công tắc rồi tưởng nó có 
 
 | # | Câu hỏi | Quyết định |
 |---|---|---|
-| Q1 | Phạm vi sản phẩm | **1 spa trước, chừa đường mở rộng** — DB có sẵn `tenant_id`, chưa làm UI quản lý tenant |
+| Q1 | Phạm vi sản phẩm | **1 spa trước, chừa đường mở rộng** — DB có sẵn `tenant_id`, chưa làm UI quản lý tenant. **Cập nhật 13/09:** đích đến nay đã rõ hình dạng — một quản trị viên nền tảng quản trị nhiều gian hàng, mỗi gian hàng một chủ và 1..n chi nhánh. Xem [`ADR-004`](./docs/decisions/ADR-004-platform-and-shops.md) |
 | Q2 | Module Phòng khám | **Cần, ưu tiên sớm** → chuyển từ M10 lên **M4** |
 | Q4 | Hạ tầng | **Cloudflare Workers + Supabase Free + Google Drive + Drizzle ORM**. Bỏ Vercel (Hobby cấm dùng thương mại). Chi tiết + lý do: [`ADR-002`](./docs/decisions/ADR-002-infrastructure.md) |
 | Q6 | Lưu trữ tệp | **Google Drive 2 TB của anh Khôi**, qua OAuth `drive.file` (service account không dùng được — hạn mức 0 GB), sau lớp `StorageAdapter` |

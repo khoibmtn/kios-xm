@@ -23,6 +23,31 @@ KiotViet Salon mà chủ dự án đang thuê bao.
 - **Triển khai**: Cloudflare Workers — https://kios-xm.spa-xumay.workers.dev
 - **Ngôn ngữ giao tiếp**: tiếng Việt. Code/tên biến/commit message: tiếng Anh.
 
+### 1b. Hình dạng sản phẩm — ba tầng (chốt 13/09/2026)
+
+```
+Quản trị viên nền tảng      — quản trị các gian hàng, đặt THAM SỐ cho từng gian
+└── Gian hàng (tenant)      — mỗi gian hàng một chủ, tự lo CHI TIẾT VẬN HÀNH
+    └── Chi nhánh (branch)  — 1..n
+        └── Người dùng, vai trò, dữ liệu nghiệp vụ
+```
+
+Spa Xumây là gian hàng đầu tiên. Bề mặt `/platform` **chưa dựng** — nhưng mọi
+thứ viết thêm phải không cản đường nó. Đọc [`ADR-004`](./docs/decisions/ADR-004-platform-and-shops.md)
+trước khi đụng vào phân quyền, `tenant_settings`, hay bất kỳ truy vấn nào cắt
+theo `tenant_id`.
+
+Ba điều rút ra, áp dụng ngay từ hôm nay:
+
+1. **`users.tenant_id` và `roles.tenant_id` là `NOT NULL` — giữ nguyên như thế.**
+   Đó là thứ bảo đảm mọi truy vấn nghiệp vụ nằm gọn trong một gian hàng. Quản
+   trị viên nền tảng sẽ ở bảng riêng, không phải một cờ trên `users`.
+2. **Thêm thiết lập mới vào `tenant_settings` thì phải xếp nó vào một trong hai
+   cột** — tham số (quản trị viên) hay vận hành (chủ gian hàng). Bảng phân chia
+   nằm ở `ADR-004` §Quyết định 2.
+3. **Không giả định "chỉ có một gian hàng"** trong bất kỳ truy vấn nào, kể cả
+   kịch bản chạy ngoài app.
+
 ## 2. Stack đã chốt
 
 | Lớp | Lựa chọn |
