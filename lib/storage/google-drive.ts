@@ -24,8 +24,17 @@ const FOLDER_MIME = 'application/vnd.google-apps.folder'
 export interface GoogleDriveConfig {
   clientId: string
   clientSecret: string
-  refreshToken: string
-  /** Thư mục gốc do ứng dụng tạo; bỏ trống thì `ensureRootFolder` sẽ tạo mới. */
+  /**
+   * Refresh token — tự đổi lấy access token khi cần.
+   *
+   * Có thể bỏ trống **nếu** đã truyền `accessToken`. Đó là đường mà kịch bản
+   * sao lưu trên GitHub Actions đi: nó xin một access token ngắn hạn từ chính
+   * ứng dụng chứ không giữ refresh token. Xem `scripts/backup.ts`.
+   */
+  refreshToken?: string
+  /** Access token đã được cấp sẵn, kèm mốc hết hạn (ms từ epoch). */
+  accessToken?: { token: string; expiresAt: number }
+  /** Thư mục gốc do ứng dụng tạo; bỏ trống thì `ensureRootFolder` sẽ tìm/tạo. */
   rootFolderId?: string
 }
 
@@ -40,14 +49,38 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private token: CachedToken | null = null
   private folderCache = new Map<string, string>()
 
-  constructor(private config: GoogleDriveConfig) {}
+  constructor(private config: GoogleDriveConfig) {
+    if (config.accessToken) {
+      this.token = { accessToken: config.accessToken.token, expiresAt: config.accessToken.expiresAt }
+    }
+  }
 
   // ───────────────────────── Xác thực ─────────────────────────
+
+  /**
+   * Cấp một access token ngắn hạn (~1 giờ) để nơi khác dùng thay mình.
+   *
+   * Dùng cho `/api/cron/drive-token`: GitHub Actions cần ghi lên Drive nhưng
+   * **không được giữ refresh token**. Trả ra access token thì phạm vi thiệt
+   * hại nếu lộ chỉ còn một giờ, và chỉ trong `drive.file` — tức những tệp do
+   * chính ứng dụng này tạo, không phải cả Drive của anh Khôi.
+   */
+  async issueAccessToken(): Promise<{ accessToken: string; expiresAt: number }> {
+    const accessToken = await this.getAccessToken()
+    return { accessToken, expiresAt: this.token!.expiresAt }
+  }
 
   private async getAccessToken(): Promise<string> {
     // Trừ hao 60 giây để không dùng đúng lúc token vừa hết hạn
     if (this.token && this.token.expiresAt > Date.now() + 60_000) {
       return this.token.accessToken
+    }
+
+    if (!this.config.refreshToken) {
+      // Chỉ có access token truyền vào, và nó đã hết hạn — không tự cấp lại được.
+      throw new StorageAuthError(
+        'Access token của Google Drive đã hết hạn và không có refresh token để cấp lại.',
+      )
     }
 
     const res = await fetch(TOKEN_URL, {

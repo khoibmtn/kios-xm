@@ -8,8 +8,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { eq } from 'drizzle-orm'
 import * as s from '../lib/schema'
-import { decryptSecret } from '../lib/crypto'
-import { GoogleDriveAdapter } from '../lib/storage/google-drive'
+import { driveForJobs } from './drive-adapter'
 
 const run = promisify(execFile)
 
@@ -76,33 +75,7 @@ async function main() {
     .where(eq(s.tenantSettings.tenantId, tenant.id))
     .limit(1)
 
-  /*
-   * Hai đường lấy refresh token, cố ý ưu tiên biến môi trường.
-   *
-   * Nếu bắt kịch bản này tự giải mã token trong cơ sở dữ liệu thì phải đưa
-   * ENCRYPTION_KEY lên GitHub — mà khoá đó mở được MỌI dữ liệu nhạy cảm đã mã
-   * hoá. Đưa riêng một refresh token của Drive lên thì phạm vi thiệt hại nhỏ
-   * hơn hẳn nếu lộ, và thu hồi cũng dễ (chỉ cần bấm kết nối lại).
-   */
-  // Dùng `||` chứ không phải `??`: env.example để sẵn GOOGLE_REFRESH_TOKEN="",
-  // mà `??` chỉ bắt null/undefined nên chuỗi rỗng sẽ lọt qua và gây lỗi xác thực.
-  let refreshToken = process.env.GOOGLE_REFRESH_TOKEN || ''
-  if (!refreshToken) {
-    if (!settings?.driveRefreshToken) {
-      throw new Error('Chưa kết nối Google Drive — không có nơi cất bản sao lưu')
-    }
-    console.log('   → dùng token trong cơ sở dữ liệu (cần ENCRYPTION_KEY)')
-    refreshToken = await decryptSecret(settings.driveRefreshToken)
-  } else {
-    console.log('   → dùng token từ biến môi trường')
-  }
-
-  const drive = new GoogleDriveAdapter({
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    refreshToken,
-    rootFolderId: settings?.driveRootFolderId ?? undefined,
-  })
+  const drive = await driveForJobs(settings)
 
   const now = new Date()
   const stamp = now.toISOString().slice(0, 19).replace(/[:T]/g, '-')

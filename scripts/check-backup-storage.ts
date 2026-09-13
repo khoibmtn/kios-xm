@@ -6,8 +6,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { eq } from 'drizzle-orm'
 import * as s from '../lib/schema'
-import { decryptSecret } from '../lib/crypto'
-import { GoogleDriveAdapter } from '../lib/storage/google-drive'
+import { driveForJobs } from './drive-adapter'
 
 /**
  * Kiểm chứng phần lưu trữ của luồng sao lưu mà không cần pg_dump.
@@ -22,12 +21,9 @@ async function main() {
     .select().from(s.tenantSettings)
     .where(eq(s.tenantSettings.tenantId, tenant.id)).limit(1)
 
-  const drive = new GoogleDriveAdapter({
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    refreshToken: await decryptSecret(settings.driveRefreshToken!),
-    rootFolderId: settings.driveRootFolderId!,
-  })
+  // Cùng một đường lấy token với `backup.ts`. Đặt `DRIVE_TOKEN_URL` +
+  // `CRON_SECRET` thì kịch bản này kiểm chứng đúng đường mà GitHub Actions đi.
+  const drive = await driveForJobs(settings)
 
   const fake = Buffer.from(
     '-- bản kết xuất giả lập để kiểm thử\nCREATE TABLE thu (id int);\n'.repeat(500),

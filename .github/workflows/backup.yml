@@ -62,14 +62,26 @@ jobs:
       # không đáng kể, đổi lại không bị tắc vì khác biệt nền tảng.
       - run: npm install --no-audit --no-fund
 
+      # ── Quyền ghi lên Drive ──────────────────────────────────────────────
+      # Job này KHÔNG còn giữ refresh token của Drive. Nó gọi
+      # `/api/cron/drive-token` bằng `CRON_SECRET` để xin một access token sống
+      # ~1 giờ, dùng xong là hết.
+      #
+      # Vì sao đổi: bản cũ giữ secret riêng `GOOGLE_REFRESH_TOKEN`, tức có HAI
+      # kết nối Drive song song, cấp cùng ngày và hết hạn cùng ngày, mà chỉ một
+      # cái có nút bấm để sửa. Ngày 12/09 anh Khôi bấm "Kết nối lại"; ứng dụng
+      # sống lại còn secret ở đây thì không, và 04:05 hôm sau sao lưu đổ. Giờ
+      # chỉ còn một kết nối, bấm một lần là cả hai cùng sống.
+      #
+      # Vẫn cố ý KHÔNG đưa ENCRYPTION_KEY lên đây: khoá đó mở được mọi dữ liệu
+      # nhạy cảm đã mã hoá, không riêng token Drive.
       - name: Chạy sao lưu
         env:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          # Cố ý KHÔNG dùng ENCRYPTION_KEY ở đây: khoá đó mở được mọi dữ liệu
-          # nhạy cảm đã mã hoá. Chỉ đưa riêng refresh token của Drive.
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DRIVE_TOKEN_URL: ${{ secrets.APP_URL }}/api/cron/drive-token
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           BACKUP_RETENTION_DAYS: '30'
         run: npx tsx scripts/backup.ts
 
@@ -78,11 +90,12 @@ jobs:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DRIVE_TOKEN_URL: ${{ secrets.APP_URL }}/api/cron/drive-token
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           VERIFY_URL: postgresql://postgres:verify@localhost:5433/verify
         run: npx tsx scripts/verify-backup.ts
 
       - name: Báo khi thất bại
         if: failure()
         run: |
-          echo "::error::Sao lưu thất bại. Kiểm tra kết nối Google Drive (token có thể đã hết hạn) và chuỗi kết nối cơ sở dữ liệu."
+          echo "::error::Sao lưu thất bại. Nếu log nói không xin được token Drive thì vào https://kios-xm.spa-xumay.workers.dev/admin/settings/storage bấm 'Kết nối lại' — token của Google hết hạn 7 ngày một lần khi app còn ở chế độ Testing (ADR-002 §2.6)."

@@ -11,8 +11,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { eq } from 'drizzle-orm'
 import * as s from '../lib/schema'
-import { decryptSecret } from '../lib/crypto'
-import { GoogleDriveAdapter } from '../lib/storage/google-drive'
+import { driveForJobs } from './drive-adapter'
 
 const run = promisify(execFile)
 
@@ -48,14 +47,7 @@ async function main() {
     .where(eq(s.tenantSettings.tenantId, tenant.id))
     .limit(1)
 
-  const drive = new GoogleDriveAdapter({
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    // `||` chứ không phải `??`: biến có thể là chuỗi rỗng chứ không phải undefined
-    refreshToken:
-      process.env.GOOGLE_REFRESH_TOKEN || (await decryptSecret(settings.driveRefreshToken!)),
-    rootFolderId: settings.driveRootFolderId!,
-  })
+  const drive = await driveForJobs(settings)
 
   console.log('1) Tìm bản sao lưu mới nhất')
   const files = (await drive.list('backups')).filter((f) => f.name.endsWith('.sql.gz'))
