@@ -1,5 +1,6 @@
 import { requireSession, can } from '@/lib/auth/session'
 import { PERMISSIONS, type Permission } from '@/lib/auth/permissions'
+import { BackupCard } from './backup-card'
 
 export const metadata = { title: 'Tổng quan' }
 
@@ -36,6 +37,10 @@ export default async function AdminHomePage() {
           Nền móng đã dựng xong. Các phân hệ nghiệp vụ sẽ lần lượt xuất hiện ở đây.
         </p>
       </section>
+
+      {/* Đặt trên cùng, trước cả thông tin phiên: đây là thứ hỏng thì im lặng,
+          nên nó phải là thứ đập vào mắt đầu tiên. */}
+      {can(user, 'settings.manage') && <BackupCard tenantId={user.tenantId} />}
 
       <section className="border-border bg-card rounded-lg border p-5">
         <h2 className="font-semibold">Phiên làm việc</h2>

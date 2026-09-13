@@ -89,6 +89,14 @@ async function main() {
   })
   console.log('   → fileId:', meta.externalId)
 
+  // Nhịp tim cho màn hình Tổng quan. Ghi NGAY sau khi tải lên xong, trước bước
+  // dọn bản cũ — dọn hỏng thì bản sao lưu vẫn đã nằm an toàn trên Drive, và
+  // đó mới là điều người dùng cần biết.
+  await db
+    .update(s.tenantSettings)
+    .set({ driveLastBackupAt: new Date(), driveLastBackupName: path.split('/').pop() ?? path })
+    .where(eq(s.tenantSettings.tenantId, tenant.id))
+
   console.log(`5) Dọn bản cũ hơn ${RETENTION_DAYS} ngày`)
   const files = await drive.list('backups')
   const cutoff = Date.now() - RETENTION_DAYS * 86_400_000

@@ -204,6 +204,8 @@ export const tenantSettings = pgTable("tenant_settings", {
 	driveRefreshToken: text("drive_refresh_token"),
 	driveConnectedAt: timestamp("drive_connected_at", { precision: 6, withTimezone: true, mode: 'date' }),
 	driveConnectedEmail: text("drive_connected_email"),
+	driveLastBackupAt: timestamp("drive_last_backup_at", { precision: 6, withTimezone: true, mode: 'date' }),
+	driveLastBackupName: text("drive_last_backup_name"),
 	updatedAt: timestamp("updated_at", { precision: 6, withTimezone: true, mode: 'date' })
 		.defaultNow()
 		.$onUpdate(() => new Date())
