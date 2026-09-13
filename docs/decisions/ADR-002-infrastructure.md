@@ -284,6 +284,30 @@ tĩnh `/privacy` và `/terms`, khai vào Branding, xác minh tên miền, rồi 
 refresh token không còn hết hạn. Nếu dùng tên miền dạng `*.workers.dev` mà Google không cho
 xác minh, phương án dự phòng là mua một tên miền riêng (~250.000 đ/năm).
 
+> **Cập nhật 13/09/2026 — đã thử, và `*.workers.dev` KHÔNG xác minh được.**
+>
+> Ứng dụng nay có địa chỉ `kios-xm.spa-xumay.workers.dev`, nhưng ô *Authorized
+> domains* của Google **tự rút gọn về tên miền riêng cấp cao nhất**, tức
+> `spa-xumay.workers.dev`. Mà host đó **không có bản ghi DNS nào**:
+>
+> ```
+> spa-xumay.workers.dev          (không phân giải)
+> kios-xm.spa-xumay.workers.dev  104.21.19.94, 172.67.185.184
+> ```
+>
+> Search Console không thể tải tệp xác minh từ một host không tồn tại, còn
+> đường xác minh bằng bản ghi DNS thì cần quyền trên vùng `workers.dev` — vùng
+> đó là của Cloudflare. **Cả hai cách đều không dùng được**, nên app còn ở
+> *Testing* và refresh token vẫn hết hạn 7 ngày một lần.
+>
+> ⇒ Muốn publish thì **buộc phải có tên miền riêng** (~250.000 đ/năm), không có
+> đường vòng. Đang chờ anh Khôi quyết.
+>
+> Trong lúc chờ, hệ quả của hạn 7 ngày đã được thu về **một chỗ duy nhất**:
+> job sao lưu không còn giữ token riêng mà xin token ngắn hạn từ ứng dụng qua
+> `/api/cron/drive-token`. Bấm "Kết nối lại" một lần là cả ứng dụng lẫn sao lưu
+> cùng sống — xem sự cố 13/09 trong `PROGRESS.md`.
+
 ### Giá trị cần dán vào Google Cloud Console
 
 **APIs & Services → Credentials → OAuth 2.0 Client IDs → Authorized redirect URIs:**
