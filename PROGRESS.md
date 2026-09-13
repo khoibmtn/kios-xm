@@ -5,39 +5,43 @@
 
 ## Trạng thái hiện tại
 
-*Cập nhật 07/09/2026 — đọc phần này trước khi bắt tay vào việc.*
+*Cập nhật 13/09/2026 — đọc phần này trước khi bắt tay vào việc.*
 
 | Mục | Giá trị |
 |---|---|
 | Milestone | M0–M3 **đã khép kín**: đặt lịch → bán từ lịch → thu tiền → trừ buổi từ gói → huỷ có bút toán ngược. Còn 3 việc mở rộng: lịch định kỳ (T-36), hoa hồng theo dòng (T-37), đọc dữ liệu lịch sử |
 | Ứng dụng đã deploy | **Có, đang chạy dữ liệu thật** — https://kios-xm.spa-xumay.workers.dev |
-| Nhánh git | `main`, đã push tới `e657f0b`; deploy khớp commit này |
-| Schema DB | **41 bảng trên Supabase**, migration mới nhất `drizzle/0013_ledger_links.sql`. `npm run db:check` báo khớp |
-| Số task DONE | 36 DONE / 8 TODO (5 việc mới từ đợt kiểm toán 12/09) |
+| Nhánh git | `main`, đã push tới `b68ef6c`; deploy khớp commit này |
+| Schema DB | **42 bảng vật lý trên Supabase**, migration mới nhất `drizzle/0013_ledger_links.sql`. `npm run db:check` đối chiếu 41 bảng có trong lược đồ Drizzle và báo khớp — bảng thứ 42 là `applied_migrations`, sổ lịch sử migration, cố ý nằm ngoài lược đồ |
+| Số task | **35 DONE / 7 TODO** trên tổng 42 (5 việc mới từ đợt kiểm toán 12/09). Đếm bằng `grep -c "| DONE |" TASKS.md` |
+| Kiểm chứng | 88 kiểm thử đơn vị + 77 phép kiểm ràng buộc CSDL (danh mục 14 · gói 19 · lịch hẹn 21 · hoá đơn 23), chạy lại 13/09 đều xanh |
 | Dữ liệu thật đã vào | **1 nhân viên** (Hương) · 207 hàng hoá · 37 nhóm hàng · 95 thương hiệu · 20 đơn vị · 183 định mức NVL · **81 khách hàng** · **19 gói liệu trình** (26 buổi spa còn nợ khách). Toàn bộ đã đối chiếu ngược từng ô với tệp nguồn |
 
-**Bắt tay vào đâu.**
+**Bắt tay vào đâu.** Bảy việc còn lại xếp theo mức chặn vận hành hằng ngày,
+không theo thứ tự mã số:
 
-1. **T-34 — huỷ hoá đơn có bút toán ngược.** Đây là lỗ hổng lớn nhất còn lại:
-   `package_transactions.invoice_item_id` **không có khoá ngoại** (cột có từ
-   migration 0009, lúc chưa có bảng hoá đơn), nên xoá hoá đơn **không hoàn buổi
-   lại cho khách**. Lúc dọn dữ liệu thử phải xoá tay sổ cái trước. Cách đúng:
-   huỷ hoá đơn ghi một `adjust` dương vào sổ cái buổi và một bút toán chi đảo
-   phiếu thu — không xoá dòng nào.
-2. **T-35 — bán thẳng từ lịch hẹn.** `invoice_items.booking_item_id` đã có ràng
-   buộc UNIQUE chặn bán một buổi hai lần, nhưng chưa có đường đi từ lưới lịch
-   sang màn bán hàng.
-   ⚠️ **Chưa có phòng nào** ở `/admin/rooms` — nhưng đã kiểm tra: KiotViet cũng
-   không có phòng nào (cả bộ lọc "Tất cả"), nên spa chưa bao giờ dùng tính năng
-   này. Chống trùng phòng chỉ có tác dụng khi anh Khôi quyết định khai phòng.
-2. **T-22** — cấp tài khoản đăng nhập cho nhân viên. Đã kiểm chứng trên KiotViet:
-   spa **thật sự chỉ có 1 nhân viên** (NV000001), cả nhánh "Đã nghỉ" cũng rỗng.
-   Nhưng gói KiotViet có giới hạn số nhân viên, nên có thể anh Khôi chưa khai hết.
-3. **Hai câu hỏi đang chờ anh Khôi** — xem `.local-data/rasoat/`:
-   giá vốn gói tính sống hay đóng băng, và 7 buổi giữ chỗ có còn hiệu lực không.
+1. **T-39 — màn hình Sổ quỹ.** Chặn vận hành thật sự: mỗi lần thu tiền đều sinh
+   phiếu thu đúng và số dư quỹ tính đúng, nhưng **không có màn hình nào mở ra
+   xem**. Tiền đang vào một cuốn sổ không mở được.
+2. **T-38 — bốn thiết lập chỉ lưu chứ chưa thi hành.** Nối vào mã hoặc ẩn khỏi
+   màn hình Cấu hình chung. Để nguyên là một cái bẫy: người bật công tắc "chỉ
+   đặt lịch trong ca làm việc" tin rằng từ giờ lịch sẽ bị chặn.
+3. **T-37 — hoa hồng theo từng dòng hoá đơn.** Bảng `invoice_item_employees` đã
+   có và đã có ràng buộc; chưa có giao diện gán. Cần xong trước khi làm M6 lương.
+4. **T-42 → T-41 → T-40** — ba việc nhỏ, xem `TASKS.md`.
+5. **T-36 — lịch hẹn định kỳ.** Tiện lợi, chưa chặn việc gì.
 
-**Việc đang dở:** không có. Cây làm việc sạch, lint 0 lỗi, 70/70 kiểm thử qua,
-`npm run db:check-packages` 19/19.
+⚠️ **Chưa có phòng nào** ở `/admin/rooms` — đã kiểm tra: KiotViet cũng không có
+phòng nào (cả bộ lọc "Tất cả"), nên spa chưa bao giờ dùng tính năng này. Chống
+trùng phòng chỉ có tác dụng khi anh Khôi quyết định khai phòng.
+
+**Bốn câu hỏi đang chờ anh Khôi** — bản rà soát đầy đủ ở
+`.local-data/rasoat/Ke-hoach-va-tien-do-kios-xm-13092026.docx` §7: giá vốn gói
+tính sống hay đóng băng, 7 buổi giữ chỗ có còn hiệu lực không, Q3 hoá đơn điện
+tử, Q5 POS chạy offline.
+
+**Việc đang dở:** không có. Cây làm việc sạch, lint 0 lỗi, 88/88 kiểm thử đơn vị
+qua, cả bốn bộ kiểm ràng buộc CSDL đều xanh.
 
 **Dữ liệu thật nằm ngoài git.** 15 tệp xuất từ KiotViet ở `.local-data/`
 (đã gitignore). Repo **công khai trên GitHub** — không bao giờ commit thư mục
@@ -73,6 +77,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 
 | 2026-09-07 | Claude Code | Gom 17 tệp xuất KiotViet vào `.local-data/` (đã gitignore) — chúng đang nằm trong `docs/` chưa được chặn, một lần `git add -A` là 81 khách hàng lên GitHub công khai. Nhập lại danh mục từ bản xuất **có kèm hàng ngừng kinh doanh**: 207 hàng hoá, 8 mã đúng trạng thái ngừng bán | `.gitignore`, `.local-data/` |
 
+| 2026-09-13 | Claude Code | **Bản rà soát kế hoạch cho anh Khôi (.docx)**: lộ trình M0–M10, 42 task kèm cột bằng chứng, 5 sai lệch từ đợt kiểm toán, 7 việc còn lại xếp theo mức chặn vận hành, 4 câu hỏi chờ quyết. Dựng lại bằng cách truy vấn CSDL và chạy lại toàn bộ phép kiểm chứ không chép tuyên bố cũ — nhờ đó bắt được **4 con số lạc hậu trong chính PROGRESS.md**: 36/8 task (đúng là 35/7), 70 kiểm thử (đúng là 88), commit `e657f0b` (đúng là `b68ef6c`), 41 bảng (42 bảng vật lý). Đã sửa cả bốn | `.local-data/rasoat/build-plan.js`, `PROGRESS.md` |
 | 2026-09-12 | Claude Code | **Kiểm toán lại toàn bộ kế hoạch**: đối chiếu từng tuyên bố DONE với mã nguồn, menu với route thật, action với nơi gọi, và đếm dòng cả 42 bảng. 35 task DONE đều có bằng chứng; 4 bộ kiểm chứng ràng buộc chạy lại đều xanh (77 phép thử). Tìm ra **5 sai lệch** — đều là "lời hứa trên giao diện chưa được giữ", ghi thành T-38…T-42 | `TASKS.md`, `PROGRESS.md` |
 | 2026-09-12 | Claude Code | **Đóng nốt 4 task còn lại**: T-34 huỷ hoá đơn bằng bút toán ngược (migration 0013 gắn khoá ngoại `RESTRICT` còn thiếu — xoá hoá đơn đã trừ buổi giờ bị chặn thẳng), T-35 bán thẳng từ lịch hẹn, T-22 cấp tài khoản đăng nhập cho nhân viên, T-31 lọc lưới lịch. Màn hình Hoá đơn vào được từ menu. `db:check-invoices` lên 23/23 | `drizzle/0013`, `app/admin/invoices/`, `app/admin/employees/[id]/account/`, `app/pos/sale/`, `app/pos/calendar/` |
 | 2026-09-12 | Claude Code | **M3 xong vòng đầu — spa chạy được trọn một ngày**: 7 bảng hoá đơn/thanh toán/sổ quỹ, màn hình bán hàng, và bất biến **mỗi thanh toán sinh một phiếu thu sổ quỹ** do trigger giữ. Đã bán thật HD000001 gồm 1 buổi từ gói + 1 sản phẩm: doanh thu 55.000 tách bạch với giá trị buổi 1.333.333, phiếu thu `TTHD000001` tự sinh, buổi khách 6 → 5. `npm run db:check-invoices` 21/21 | `drizzle/0012_invoices.sql`, `lib/schema/invoices.ts`, `app/pos/sale/`, `scripts/check-invoice-rules.ts` |
@@ -120,6 +125,7 @@ này, cũng đừng dán nội dung nó vào PROGRESS/TASKS.
 | 2026-09-07 | **Đối chiếu 237 mặt hàng với bảng hoa hồng KiotViet — giá bán khớp 100%, giá vốn gói thì không so được.** 204/237 mã khớp (33 mã còn lại đều mang hậu tố `{DEL}`, tức đã xoá khỏi danh mục). Giá bán: **204/204 khớp tuyệt đối**. Giá vốn: 193/204 khớp, 11 mã lệch — **toàn bộ là gói liệu trình**, app ghi 0 còn KiotViet ghi một con số dương. Đào tiếp thì thấy đây không phải lỗi nhập: giá vốn gói của KiotViet **không bằng** định mức nguyên vật liệu × số buổi — chỉ 4/11 gói khớp, 7 gói lệch từ 9.450đ tới 451.500đ. Nghĩa là con số của KiotViet là ảnh chụp lúc cấu hình gói, còn định mức thì đã đổi từ đó. ⇒ **Chưa thêm cột `cost` cho gói** — làm vậy là dựng nguồn sự thật thứ hai cạnh `service_materials`. Cần anh Khôi quyết: giá vốn gói nên tính sống từ định mức hiện hành, hay đóng băng lúc bán như `allocated_per_session`. |
 | 2026-09-07 | **Phương ngữ .xlsx thứ hai hoá ra dễ hơn tưởng — nhưng chỉ sau khi mở tệp ra xem.** Ghi chú cũ đoán nó dùng "chuỗi nội tuyến `<x:is>`"; giải nén ra thì thấy khác hẳn: chuỗi nằm thẳng trong `<x:v>` với `t="str"`, và **ô lẫn dòng đều không có thuộc tính `r`** (toạ độ A1) nên vị trí cột chỉ suy được từ thứ tự. Chính chỗ thiếu `r` mới là thứ làm thư viện đọc bó tay. Tự viết mất ~150 dòng, không thêm thư viện nào vì `DecompressionStream('deflate-raw')` đã có sẵn trong trình duyệt lẫn Node. ⇒ Một ghi chú "đã biết nguyên nhân" viết từ suy đoán còn tệ hơn không có ghi chú, vì nó ngăn người sau đi mở tệp ra xem. |
 | 2026-09-12 | **"Lưu được" không phải là "chạy được".** Kiểm toán lại phát hiện bốn thiết lập trong Cấu hình chung — giới hạn theo ca, chế độ phân bổ gói, phương pháp giá vốn, khoá sổ — chỉ xuất hiện ở đúng ba tệp: trang cấu hình, form, và action lưu. **Không dòng mã nào đọc chúng để đổi hành vi.** Tiêu chí nghiệm thu của T-21 viết "lưu đủ 6 thiết lập", và đúng theo chữ thì nó đã xong; nhưng người bật công tắc "chỉ đặt lịch trong ca làm việc" thì tin rằng từ giờ lịch sẽ bị chặn. ⇒ Tiêu chí nghiệm thu cho một thiết lập không được dừng ở "lưu xuống CSDL" — phải là **"đổi nó thì thấy hành vi khác đi"**. Chưa làm được thì ẩn công tắc đi, đừng bày ra. Cùng đợt kiểm toán: 3 server action không ai gọi (mỗi cái là một endpoint mở), và sổ quỹ được ghi sau mỗi lần thu tiền nhưng chưa có màn hình nào mở nó ra xem. |
+| 2026-09-13 | **Bảng "Trạng thái hiện tại" tự trôi khỏi sự thật, và nó là thứ người sau đọc đầu tiên.** Dựng bản rà soát cho anh Khôi bằng cách đếm lại từ nguồn thì bốn con số trong chính bảng này đều sai: 36 DONE / 8 TODO (đúng là 35/7 — tôi tự gõ tay hôm trước, trong khi dòng nhật ký ngay dưới ghi đúng 35), 70 kiểm thử (đã lên 88), commit `e657f0b` (đã push thêm hai commit), 41 bảng (42 bảng vật lý). Không con số nào sai vì thiếu hiểu biết — chúng sai vì **được chép tay vào một chỗ không ai chạy lại**. ⇒ Con số nào đếm được bằng một câu lệnh thì phải ghi kèm câu lệnh ấy: `grep -c "\| DONE \|" TASKS.md`, `npm run test`, `git log -1`. Và khi văn xuôi với bảng tóm tắt nói khác nhau, **bảng tóm tắt mới là cái đáng nghi**, vì nó là thứ được cập nhật bằng tay nhiều nhất. |
 | 2026-09-12 | **Thay chuỗi bằng script nuốt mất hai thứ, cả hai đều im lặng.** Sửa JSX của khối lịch bằng `str.replace` trong Python: lần một mất thuộc tính `title` (tooltip biến mất), lần hai mất cả `className` (màu theo trạng thái biến mất, khối chỉ còn viền trắng). `tsc` không kêu vì JSX thiếu thuộc tính vẫn hợp lệ; lint không kêu vì… thật ra lint **có** kêu — `STATUS_STYLE is assigned a value but never used` — nhưng nó nằm lẫn trong 14 dòng cảnh báo nền và tôi suýt bỏ qua. ⇒ Với JSX nhiều dòng thì dùng công cụ sửa tệp có so khớp chính xác, đừng dùng phép thay chuỗi trên một khối lớn; và **mỗi cảnh báo "khai rồi không dùng" mới xuất hiện đều đáng đọc** — nó thường là dấu vết của một thứ vừa bị xoá nhầm. |
 | 2026-09-12 | **Một cột chờ sẵn không phải là một liên kết.** `package_transactions.invoice_item_id` được thêm từ migration 0009 để "chờ hoá đơn", nhưng nó chỉ là `uuid` trần — không khoá ngoại. Nên khi xoá hoá đơn thử, buổi khách **không tự hoàn lại**: tổng buổi đứng ở 25 thay vì về 26, và tôi phải xoá tay sổ cái trước. Không ai báo lỗi gì cả. ⇒ Cột dự phòng cho bảng chưa tồn tại thì lúc bảng ấy ra đời **phải quay lại gắn khoá ngoại và quyết định hành vi khi xoá** — nếu không nó là một liên kết chỉ tồn tại trong đầu người viết. Đã ghi thành T-34; cách đúng không phải xoá mà là bút toán ngược. |
 | 2026-09-12 | **Hai lỗi chỉ lộ ra khi bấm thử thật, không lỗi nào build hay test bắt được.** (1) `describeBookingError` không nhận ra lỗi nào cả, vì **Drizzle bọc lỗi của `pg` lại**: lớp ngoài chỉ có `message` kiểu "Failed query: insert into …", còn `code: 23P01` và tên ràng buộc nằm ở `cause`. Mọi lần đặt trùng giờ đều rơi xuống câu chung chung "Chi tiết đã được ghi lại" — đúng thứ tôi viết cả một module để tránh. Đã đi dọc chuỗi `cause`, và chép đúng hình dạng lỗi thật vào bài kiểm. (2) Đặt trùng giờ **để lại một phiếu hẹn rỗng**: phiếu ghi xong rồi mới tới dòng dịch vụ bị từ chối, mà hai câu chèn không nằm trong một giao dịch. Phiếu rỗng vô hình trên lưới (lưới đi từ `booking_items`) nên nó nằm đó ăn mất mã LH mà không ai biết. Bắt được vì lúc dọn dữ liệu thử thấy **xoá ra ba phiếu trong khi chỉ đặt thành công một** — con số không khớp mới là thứ tố giác. |
