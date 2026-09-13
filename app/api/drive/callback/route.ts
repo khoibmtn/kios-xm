@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { tenantSettings } from '@/lib/schema'
@@ -67,12 +68,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(settingsUrl)
     }
 
-    // Tạo thư mục gốc ngay — scope drive.file chỉ với tới tệp do app tạo,
-    // nên phải tự tạo chứ không dùng được thư mục có sẵn (ADR-002 §2.2).
+    // Thư mục gốc phải do ứng dụng tạo — scope `drive.file` không với tới thư
+    // mục có sẵn của người dùng (ADR-002 §2.2).
+    //
+    // **Truyền lại id cũ.** Đây là chỗ đã gây mất dấu dữ liệu: trước 13/09
+    // adapter được dựng không có `rootFolderId`, nên mỗi lần kết nối lại là
+    // một thư mục `kios-xm-data` mới và toàn bộ tệp cũ bị bỏ rơi. `ensureRoot
+    // Folder` nay tự xác minh id còn sống và tự tìm theo tên, nhưng vẫn phải
+    // đưa id cũ vào: nó rẻ hơn một lượt tìm, và nói rõ ý định ngay tại đây.
+    const [current] = await db
+      .select({ rootFolderId: tenantSettings.driveRootFolderId })
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, session.user.tenantId))
+
     const adapter = new GoogleDriveAdapter({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       refreshToken: token.refresh_token,
+      rootFolderId: current?.rootFolderId ?? undefined,
     })
 
     const rootFolderId = await adapter.ensureRootFolder()

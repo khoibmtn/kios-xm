@@ -109,16 +109,63 @@ export class GoogleDriveAdapter implements StorageAdapter {
   // ───────────────────────── Thư mục ─────────────────────────
 
   /**
-   * Tạo thư mục gốc nếu chưa có. Trả về id để lưu vào tenant_settings.
-   * Người dùng có thể tự kéo thư mục này đi nơi khác trong Drive — quyền gắn
-   * với tệp chứ không gắn với vị trí, nên ứng dụng vẫn ghi được.
+   * Trả về thư mục gốc, **tìm trước rồi mới tạo**. Id trả về để lưu vào
+   * `tenant_settings`. Người dùng có thể tự kéo thư mục này đi nơi khác trong
+   * Drive — quyền gắn với tệp chứ không gắn với vị trí, nên vẫn ghi được.
+   *
+   * Trước 13/09 hàm này chỉ có hai dòng: có id thì trả về, không thì `create`.
+   * Nó **không hề tìm** thư mục đã có. Mà `/api/drive/callback` lại dựng
+   * adapter không truyền `rootFolderId`, nên **mỗi lần bấm "Kết nối lại" là
+   * một thư mục `kios-xm-data` mới**, và toàn bộ tệp cũ bị bỏ rơi: 9 bản sao
+   * lưu nằm lại trong thư mục cũ trong khi ứng dụng trỏ vào thư mục rỗng.
+   * Với token Testing hết hạn 7 ngày một lần, đó là một thư mục mồ côi mỗi
+   * tuần. Không có lỗi nào được báo — chỉ có `list('backups')` trả về rỗng.
+   *
+   * Ba bước, theo đúng thứ tự đó:
+   *  1. Có id trong cấu hình thì **xác minh nó còn sống** đã. Id có thể trỏ
+   *     vào Drive của tài khoản khác (đổi tài khoản khi kết nối lại) hoặc vào
+   *     thư mục người dùng đã xoá.
+   *  2. Tìm thư mục cùng tên. Scope `drive.file` chỉ thấy tệp do chính ứng
+   *     dụng này tạo, nên một thư mục trùng tên do người dùng tự tạo là vô
+   *     hình ở đây — tìm theo tên là an toàn. Lấy bản **cũ nhất**, vì đó là
+   *     bản chứa dữ liệu.
+   *  3. Hết cách thì mới tạo mới.
    */
   async ensureRootFolder(name = 'kios-xm-data'): Promise<string> {
-    if (this.config.rootFolderId) return this.config.rootFolderId
+    if (this.config.rootFolderId && (await this.folderIsAlive(this.config.rootFolderId))) {
+      return this.config.rootFolderId
+    }
 
-    const id = await this.createFolder(name, undefined)
+    const found = await this.findOwnFolderByName(name)
+    const id = found ?? (await this.createFolder(name, undefined))
     this.config.rootFolderId = id
     return id
+  }
+
+  /** Thư mục còn tồn tại, chưa nằm trong thùng rác, và tài khoản này thấy được. */
+  private async folderIsAlive(id: string): Promise<boolean> {
+    const res = await this.call(`${API}/files/${encodeURIComponent(id)}?fields=id,trashed`)
+    if (!res.ok) return false // 404 = không thuộc Drive của tài khoản đang kết nối
+    const json = (await res.json()) as { trashed?: boolean }
+    return json.trashed !== true
+  }
+
+  /** Thư mục gốc cũ nhất mang tên này mà chính ứng dụng đã tạo, nếu còn. */
+  private async findOwnFolderByName(name: string): Promise<string | null> {
+    const q = [
+      `name = '${name.replace(/'/g, "\\'")}'`,
+      `mimeType = '${FOLDER_MIME}'`,
+      'trashed = false',
+    ].join(' and ')
+
+    const res = await this.call(
+      `${API}/files?q=${encodeURIComponent(q)}&fields=files(id)` +
+        '&orderBy=createdTime&pageSize=1',
+    )
+    if (!res.ok) return null
+
+    const json = (await res.json()) as { files: { id: string }[] }
+    return json.files[0]?.id ?? null
   }
 
   private async createFolder(name: string, parentId?: string): Promise<string> {
